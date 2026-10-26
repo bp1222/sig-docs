@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sig_value.h - libsig reference</title><style>:root{color-scheme:light dark;--bg:#fff;--fg:#1b1f24;--mut:#59636e;--bd:#d0d7de;--code:#f6f8fa;--note:#fff8c5;--lnk:#0969da}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--mut:#9198a1;--bd:#30363d;--code:#161b22;--note:#3b2e00;--lnk:#58a6ff}}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;margin:0 auto;max-width:56rem;padding:1rem 16px 3rem}
+a{color:var(--lnk)}code,pre{font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+pre{background:var(--code);padding:.6rem .8rem;overflow-x:auto;border-radius:6px}
+.note{background:var(--note);border-left:4px solid var(--bd);padding:.5rem .8rem;margin:1rem 0;white-space:pre-wrap}
+.item{border-top:1px solid var(--bd);margin-top:1.5rem;padding-top:.5rem}
+.doc{white-space:pre-wrap;color:var(--fg)}table{border-collapse:collapse}th,td{border:1px solid var(--bd);padding:.25rem .6rem;text-align:left}
+nav{color:var(--mut)}.shared{color:var(--mut);font-size:.9em;margin:.4rem 0 0}</style></head>
+<body>
+<nav><a href="index.html">Reference index</a> / foundation / <a href="/sig-docs/">Architecture site</a></nav>
+<h1>sig_value.h</h1>
+<p><code>include/sig/value/sig_value.h</code></p>
+<section class="item" id="macro-SIG_VALUE_MAX_DEPTH"><h3>SIG_VALUE_MAX_DEPTH</h3><pre>#define SIG_VALUE_MAX_DEPTH 32</pre><p class="doc">Maximum container nesting accepted by sig_value_dup, the JSON
+serializer and the JSON parser. Builders are not capped (a sig_ht
+cannot carry a depth), and sig_value_dtor recurses without a limit.</p></section>
+<section class="item" id="sig_value_kind_t"><h3>sig_value_kind_t</h3><pre>typedef enum {
+    SIG_VAL_INT,
+    SIG_VAL_BOOL,
+    SIG_VAL_DOUBLE,
+    SIG_VAL_STRING,
+    SIG_VAL_BYTES,
+    SIG_VAL_MAP,  /* string -&gt; sig_value, backed by sig_ht */
+    SIG_VAL_LIST, /* ordered sig_value sequence, backed by sig_ll */
+} sig_value_kind_t;</pre></section>
+<section class="item" id="sig_string"><h3>sig_string</h3><pre>typedef struct sig_string sig_string;</pre></section>
+<section class="item" id="sig_bytes"><h3>sig_bytes</h3><pre>typedef struct sig_bytes sig_bytes;</pre></section>
+<section class="item" id="sig_value"><h3>sig_value</h3><pre>typedef struct {
+    sig_value_kind_t kind;
+    union {
+        sig_int_t i;
+        bool b;
+        double d;
+        sig_string *s;
+        sig_bytes *by;
+        sig_ht *map;
+        sig_ll *list;
+    } as;
+} sig_value;</pre></section>
+<section class="item" id="sig_value_int"><h3>sig_value_int</h3><pre>sig_value sig_value_int(sig_int_t v)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>v</code></td><td><code>sig_int_t</code></td></tr></tbody></table></section>
+<section class="item" id="sig_value_bool"><h3>sig_value_bool</h3><pre>sig_value sig_value_bool(bool v)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>v</code></td><td><code>bool</code></td></tr></tbody></table></section>
+<section class="item" id="sig_value_double"><h3>sig_value_double</h3><pre>sig_value sig_value_double(double v)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>v</code></td><td><code>double</code></td></tr></tbody></table></section>
+<section class="item" id="sig_value_string"><h3>sig_value_string</h3><pre>sig_status_t sig_value_string(sig_value * out, const char * s)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr><tr><td><code>s</code></td><td><code>const char *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_value_string_n"><h3>sig_value_string_n</h3><pre>sig_status_t sig_value_string_n(sig_value * out, const char * s, size_t len)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr><tr><td><code>s</code></td><td><code>const char *</code></td></tr><tr><td><code>len</code></td><td><code>size_t</code></td></tr></tbody></table></section>
+<section class="item" id="sig_value_bytes"><h3>sig_value_bytes</h3><pre>sig_status_t sig_value_bytes(sig_value * out, const void * data, size_t len)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr><tr><td><code>data</code></td><td><code>const void *</code></td></tr><tr><td><code>len</code></td><td><code>size_t</code></td></tr></tbody></table></section>
+<section class="item" id="sig_value_kind"><h3>sig_value_kind</h3><pre>sig_value_kind_t sig_value_kind(const sig_value * v)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>v</code></td><td><code>const sig_value *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_value_dtor"><h3>sig_value_dtor</h3><pre>void sig_value_dtor(sig_value * v)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>v</code></td><td><code>sig_value *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_value_copy"><h3>sig_value_copy</h3><pre>void sig_value_copy(const sig_value * src, sig_value * dest)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>src</code></td><td><code>const sig_value *</code></td></tr><tr><td><code>dest</code></td><td><code>sig_value *</code></td></tr></tbody></table><p class="doc">Shallow copy: for string/bytes kinds, src and dest end up pointing at
+the SAME underlying buffer (its refcount is bumped). Containers
+(map/list) are shared by refcount too; a shared container is frozen
+(immutable) while shared -- mutators return SIG_ERR_STATE -- so
+copying a container freezes the original until the other handles are
+released or the value is sig_value_dup'd. Both sig_values
+must be independently dtor'd. The payload is immutable and its
+refcount is atomic, so a value may safely be sig_value_copy'd across
+threads and each thread's copy used/dtor'd concurrently.
+
+dest is overwritten unconditionally. If dest already holds an owned
+string/bytes value, that value's buffer is leaked -- destroy dest
+first if it may already own something.</p></section>
+<section class="item" id="sig_value_dup"><h3>sig_value_dup</h3><pre>sig_status_t sig_value_dup(const sig_value * src, sig_value * dest)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>src</code></td><td><code>const sig_value *</code></td></tr><tr><td><code>dest</code></td><td><code>sig_value *</code></td></tr></tbody></table><p class="doc">Deep copy: for string/bytes kinds, dest gets its own independently
+allocated buffer with no state shared with src. Contrast with
+sig_value_copy(), which shares the buffer via refcount. For map/list
+it is a recursive deep copy producing a unique, mutable tree, and
+returns SIG_ERR_INVALID_ARG if nesting exceeds SIG_VALUE_MAX_DEPTH.
+
+dest is overwritten unconditionally; the same leak caveat as
+sig_value_copy() applies if dest already owns a value.</p></section>
+<section class="item" id="sig_value_box"><h3>sig_value_box</h3><pre>sig_status_t sig_value_box(const sig_value * v, sig_value ** out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>v</code></td><td><code>const sig_value *</code></td></tr><tr><td><code>out</code></td><td><code>sig_value **</code></td></tr></tbody></table><p class="doc">Heap-allocates a sig_value and copies *v into it via sig_value_copy
+(shares the underlying string/bytes buffer via refcount -- boxing
+only relocates the small by-value wrapper onto the heap, it does
+not deep-duplicate the payload). Boxing a container shares it
+(refcount) and so freezes it, like sig_value_copy. The returned pointer is suitable
+for storing in a void*-payload container (sig_ht/sig_ll) alongside
+sig_value_dtor_v as the destructor.</p></section>
+<section class="item" id="sig_value_dtor_v"><h3>sig_value_dtor_v</h3><pre>void sig_value_dtor_v(void * v)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>v</code></td><td><code>void *</code></td></tr></tbody></table><p class="doc">Destructor shaped exactly like sig_ht's/sig_ll's sig_dtor_fn
+(void (*)(void*)) -- pass this directly as a container's destructor
+with no function-pointer cast. Destroys the boxed value via
+sig_value_dtor() and frees the box itself. Only call on a pointer
+previously returned by sig_value_box().</p></section>
+<section class="item" id="sig_value_get_int"><h3>sig_value_get_int</h3><pre>sig_status_t sig_value_get_int(const sig_value * v, sig_int_t * out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>v</code></td><td><code>const sig_value *</code></td></tr><tr><td><code>out</code></td><td><code>sig_int_t *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_value_get_bool"><h3>sig_value_get_bool</h3><pre>sig_status_t sig_value_get_bool(const sig_value * v, bool * out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>v</code></td><td><code>const sig_value *</code></td></tr><tr><td><code>out</code></td><td><code>bool *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_value_get_double"><h3>sig_value_get_double</h3><pre>sig_status_t sig_value_get_double(const sig_value * v, double * out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>v</code></td><td><code>const sig_value *</code></td></tr><tr><td><code>out</code></td><td><code>double *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_value_get_string"><h3>sig_value_get_string</h3><pre>sig_status_t sig_value_get_string(const sig_value * v, const char ** out, size_t * out_len)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>v</code></td><td><code>const sig_value *</code></td></tr><tr><td><code>out</code></td><td><code>const char **</code></td></tr><tr><td><code>out_len</code></td><td><code>size_t *</code></td></tr></tbody></table><p class="doc">out is a borrowed pointer into v's own buffer: valid only for v's
+lifetime, not owned by the caller, and must not be freed or used
+after v is passed to sig_value_dtor().</p></section>
+<section class="item" id="sig_value_get_bytes"><h3>sig_value_get_bytes</h3><pre>sig_status_t sig_value_get_bytes(const sig_value * v, const uint8_t ** out, size_t * out_len)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>v</code></td><td><code>const sig_value *</code></td></tr><tr><td><code>out</code></td><td><code>const uint8_t **</code></td></tr><tr><td><code>out_len</code></td><td><code>size_t *</code></td></tr></tbody></table><p class="doc">out is a borrowed pointer into v's own buffer: valid only for v's
+lifetime, not owned by the caller, and must not be freed or used
+after v is passed to sig_value_dtor().</p></section>
+<div class="note">---- Containers ---------------------------------------------------
+
+A map or list value owns one reference to a sig_ht / sig_ll whose
+elements are boxed sig_values (dtor = sig_value_dtor_v). Sharing
+follows the other refcounted kinds: sig_value_copy shares the
+container, sig_value_dup deep-copies the whole tree into a new,
+uniquely owned (mutable) one.
+
+Mutation (put/remove/append) is allowed only while the container is
+uniquely owned (its refcount is 1). Once a container has been
+shared with sig_value_copy it is frozen: mutators return
+SIG_ERR_STATE until the other handles are released with
+sig_value_dtor -- or you sig_value_dup it to get a mutable copy.
+Release your handle (sig_value_dtor) as soon as you have handed a
+value off, so containers do not stay frozen longer than necessary;
+sig_value_is_shared() is there for assertions and debugging.
+
+Like sig_ht/sig_ll themselves, a container must be mutated by one
+thread at a time; no locking is added.</div>
+<section class="item" id="sig_value_map_fn"><h3>sig_value_map_fn</h3><pre>typedef sig_status_t (*sig_value_map_fn)(const char *key, const sig_value *value, void *ctx);</pre></section>
+<section class="item" id="sig_value_list_fn"><h3>sig_value_list_fn</h3><pre>typedef sig_status_t (*sig_value_list_fn)(size_t index, const sig_value *value, void *ctx);</pre></section>
+<section class="item" id="sig_value_map"><h3>sig_value_map</h3><pre>sig_status_t sig_value_map(sig_value * out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_value_list"><h3>sig_value_list</h3><pre>sig_status_t sig_value_list(sig_value * out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_value_map_put"><h3>sig_value_map_put</h3><pre>sig_status_t sig_value_map_put(sig_value * map, const char * key, sig_value * child)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>map</code></td><td><code>sig_value *</code></td></tr><tr><td><code>key</code></td><td><code>const char *</code></td></tr><tr><td><code>child</code></td><td><code>sig_value *</code></td></tr></tbody></table><p class="doc">put/append MOVE *child into the container: on success *child is
+reset to int 0 (so a later sig_value_dtor(child) is harmless); on any
+failure *child is untouched and the caller still owns it. put on an
+existing key replaces (and destroys) the old value. Errors: NULL
+argument, or child is the container itself -&gt; SIG_ERR_INVALID_ARG;
+wrong kind -&gt; SIG_ERR_TYPE_MISMATCH; container shared -&gt;
+SIG_ERR_STATE; allocation failure -&gt; SIG_ERR_ALLOC.</p></section>
+<section class="item" id="sig_value_list_append"><h3>sig_value_list_append</h3><pre>sig_status_t sig_value_list_append(sig_value * list, sig_value * child)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>list</code></td><td><code>sig_value *</code></td></tr><tr><td><code>child</code></td><td><code>sig_value *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_value_map_put">sig_value_map_put</a></p><p class="doc">put/append MOVE *child into the container: on success *child is
+reset to int 0 (so a later sig_value_dtor(child) is harmless); on any
+failure *child is untouched and the caller still owns it. put on an
+existing key replaces (and destroys) the old value. Errors: NULL
+argument, or child is the container itself -&gt; SIG_ERR_INVALID_ARG;
+wrong kind -&gt; SIG_ERR_TYPE_MISMATCH; container shared -&gt;
+SIG_ERR_STATE; allocation failure -&gt; SIG_ERR_ALLOC.</p></section>
+<section class="item" id="sig_value_map_remove"><h3>sig_value_map_remove</h3><pre>sig_status_t sig_value_map_remove(sig_value * map, const char * key)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>map</code></td><td><code>sig_value *</code></td></tr><tr><td><code>key</code></td><td><code>const char *</code></td></tr></tbody></table><p class="doc">SIG_ERR_NOT_FOUND if key is absent; same other errors as put.</p></section>
+<section class="item" id="sig_value_map_get"><h3>sig_value_map_get</h3><pre>sig_status_t sig_value_map_get(const sig_value * map, const char * key, const sig_value ** out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>map</code></td><td><code>const sig_value *</code></td></tr><tr><td><code>key</code></td><td><code>const char *</code></td></tr><tr><td><code>out</code></td><td><code>const sig_value **</code></td></tr></tbody></table><p class="doc">out is a borrowed pointer valid until the container is mutated or
+destroyed. SIG_ERR_NOT_FOUND if key is absent / index &gt;= count.
+list_get is O(n). Work on shared containers too.
+
+Children reachable through a shared parent are protected only by
+const: callers must not cast away const to mutate them. Handles must
+come from sig_value_copy (a bitwise copy of a container sig_value is
+a misuse).</p></section>
+<section class="item" id="sig_value_list_get"><h3>sig_value_list_get</h3><pre>sig_status_t sig_value_list_get(const sig_value * list, size_t index, const sig_value ** out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>list</code></td><td><code>const sig_value *</code></td></tr><tr><td><code>index</code></td><td><code>size_t</code></td></tr><tr><td><code>out</code></td><td><code>const sig_value **</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_value_map_get">sig_value_map_get</a></p><p class="doc">out is a borrowed pointer valid until the container is mutated or
+destroyed. SIG_ERR_NOT_FOUND if key is absent / index &gt;= count.
+list_get is O(n). Work on shared containers too.
+
+Children reachable through a shared parent are protected only by
+const: callers must not cast away const to mutate them. Handles must
+come from sig_value_copy (a bitwise copy of a container sig_value is
+a misuse).</p></section>
+<section class="item" id="sig_value_count"><h3>sig_value_count</h3><pre>size_t sig_value_count(const sig_value * v)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>v</code></td><td><code>const sig_value *</code></td></tr></tbody></table><p class="doc">Element count of a map or list; 0 for NULL and for other kinds.</p></section>
+<section class="item" id="sig_value_map_walk"><h3>sig_value_map_walk</h3><pre>sig_status_t sig_value_map_walk(const sig_value * map, sig_value_map_fn fn, void * ctx)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>map</code></td><td><code>const sig_value *</code></td></tr><tr><td><code>fn</code></td><td><code>sig_value_map_fn</code></td></tr><tr><td><code>ctx</code></td><td><code>void *</code></td></tr></tbody></table><p class="doc">Map walk order is hash order (unspecified); list walk is in append
+order. A non-SIG_OK return from fn stops the walk and is returned.
+`value` is borrowed for the duration of the callback.</p></section>
+<section class="item" id="sig_value_list_walk"><h3>sig_value_list_walk</h3><pre>sig_status_t sig_value_list_walk(const sig_value * list, sig_value_list_fn fn, void * ctx)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>list</code></td><td><code>const sig_value *</code></td></tr><tr><td><code>fn</code></td><td><code>sig_value_list_fn</code></td></tr><tr><td><code>ctx</code></td><td><code>void *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_value_map_walk">sig_value_map_walk</a></p><p class="doc">Map walk order is hash order (unspecified); list walk is in append
+order. A non-SIG_OK return from fn stops the walk and is returned.
+`value` is borrowed for the duration of the callback.</p></section>
+<section class="item" id="sig_value_merge_patch"><h3>sig_value_merge_patch</h3><pre>sig_status_t sig_value_merge_patch(const sig_value * target, const sig_value * patch, sig_value * out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>target</code></td><td><code>const sig_value *</code></td></tr><tr><td><code>patch</code></td><td><code>const sig_value *</code></td></tr><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr></tbody></table><p class="doc">JSON Merge Patch (RFC 7386) over values, without null-deletion (a
+sig_value has no null). *out is a new, uniquely owned value; target
+and patch are not modified. A non-map patch yields a deep copy of
+the patch; a map patch yields a copy of target (an empty map if
+target is not a map) with every patch key merged in -- a map patch
+value merges recursively into an existing map value, anything else
+replaces. SIG_ERR_INVALID_ARG for NULL arguments, SIG_ERR_ALLOC on
+allocation failure (*out untouched).</p></section>
+<section class="item" id="sig_value_is_shared"><h3>sig_value_is_shared</h3><pre>bool sig_value_is_shared(const sig_value * v)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>v</code></td><td><code>const sig_value *</code></td></tr></tbody></table><p class="doc">True if v's refcounted payload (string, bytes, map or list) has more
+than one reference. False for NULL and for inline kinds.</p></section>
+</body></html>

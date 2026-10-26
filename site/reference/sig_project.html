@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sig_project.h - libsig reference</title><style>:root{color-scheme:light dark;--bg:#fff;--fg:#1b1f24;--mut:#59636e;--bd:#d0d7de;--code:#f6f8fa;--note:#fff8c5;--lnk:#0969da}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--mut:#9198a1;--bd:#30363d;--code:#161b22;--note:#3b2e00;--lnk:#58a6ff}}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;margin:0 auto;max-width:56rem;padding:1rem 16px 3rem}
+a{color:var(--lnk)}code,pre{font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+pre{background:var(--code);padding:.6rem .8rem;overflow-x:auto;border-radius:6px}
+.note{background:var(--note);border-left:4px solid var(--bd);padding:.5rem .8rem;margin:1rem 0;white-space:pre-wrap}
+.item{border-top:1px solid var(--bd);margin-top:1.5rem;padding-top:.5rem}
+.doc{white-space:pre-wrap;color:var(--fg)}table{border-collapse:collapse}th,td{border:1px solid var(--bd);padding:.25rem .6rem;text-align:left}
+nav{color:var(--mut)}.shared{color:var(--mut);font-size:.9em;margin:.4rem 0 0}</style></head>
+<body>
+<nav><a href="index.html">Reference index</a> / project / <a href="/sig-docs/">Architecture site</a></nav>
+<h1>sig_project.h</h1>
+<p><code>include/sig/project/sig_project.h</code></p>
+<section class="item" id="sig_project"><h3>sig_project</h3><pre>typedef struct sig_project sig_project;</pre></section>
+<section class="item" id="sig_project_load"><h3>sig_project_load</h3><pre>sig_status_t sig_project_load(sig_persistence * store, const sig_capsule_registry * modules, sig_project ** out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>store</code></td><td><code>sig_persistence *</code></td></tr><tr><td><code>modules</code></td><td><code>const sig_capsule_registry *</code></td></tr><tr><td><code>out</code></td><td><code>sig_project **</code></td></tr></tbody></table><p class="doc">Loads every key of the &quot;configurations&quot; and then the &quot;services&quot;
+namespace of `store`, building the project's capsule configurations and
+services -- see sig_config_load_configuration()/sig_config_load_service()
+for the exact per-document schema (a trailing newline is fine). With the
+file backend these are &lt;base&gt;/configurations/&lt;name&gt;.cfg and
+&lt;base&gt;/services/&lt;name&gt;.cfg (see sig_persistence_file.h).
+
+`store` and `modules` are borrowed and must outlive the returned
+sig_project: the project saves and removes keys in `store` as it is
+edited. `modules` is created and owned by the caller, with every
+compiled-in sig_capsule registered before calling this.
+
+A namespace that does not exist (or that the store reports as
+SIG_ERR_NOT_FOUND) holds zero entries, not an error; a key that
+vanishes between listing and loading is skipped. Any other failure to
+list or load is SIG_ERR_PLATFORM (SIG_ERR_ALLOC for want of memory); a
+document that does not validate is SIG_ERR_PARSE (SIG_ERR_NOT_FOUND for
+an unregistered type, or an unknown configuration or receiver). Nothing
+is started by this call -- see sig_project_start_auto(). On any failure,
+everything built so far is torn down internally and *out is left
+untouched; no partially built project is ever returned.</p></section>
+<section class="item" id="sig_project_destroy"><h3>sig_project_destroy</h3><pre>void sig_project_destroy(sig_project * project)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>sig_project *</code></td></tr></tbody></table><p class="doc">Stops every service still running, then destroys every service's
+instances, then every service, then every capsule configuration. Does not
+touch `modules` -- that stays the caller's.</p></section>
+<section class="item" id="sig_project_get_service"><h3>sig_project_get_service</h3><pre>sig_status_t sig_project_get_service(const sig_project * project, const char * name, sig_service ** out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>const sig_project *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>out</code></td><td><code>sig_service **</code></td></tr></tbody></table></section>
+<section class="item" id="sig_project_start_auto"><h3>sig_project_start_auto</h3><pre>sig_status_t sig_project_start_auto(sig_project * project)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>sig_project *</code></td></tr></tbody></table><p class="doc">Calls sig_service_start on every service whose definition had
+&quot;auto_start&quot;: true. Best-effort across services, mirroring the
+convention sig_capsule_instance_notify() already established for
+multi-target operations: a failure starting one service does not
+stop the others from being attempted; returns SIG_OK only if every
+flagged service started successfully, otherwise the status of the
+last one that failed.</p></section>
+<section class="item" id="sig_project_stop_all"><h3>sig_project_stop_all</h3><pre>sig_status_t sig_project_stop_all(sig_project * project)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>sig_project *</code></td></tr></tbody></table><p class="doc">Calls sig_service_stop on every service in the project, regardless
+of how (or whether) it was started -- sig_service_stop is always a
+safe no-op on a service that was never started. Same best-effort
+convention as sig_project_start_auto.</p></section>
+<section class="item" id="sig_project_service_fn"><h3>sig_project_service_fn</h3><pre>typedef sig_status_t (*sig_project_service_fn)(const char *name, sig_service *service, void *ctx);</pre><p class="doc">Read-only introspection, safe from any thread once the project is
+loaded (the service table is only mutated during sig_project_load()
+and sig_project_destroy()). The sig_service handed to the callback
+stays valid until sig_project_destroy(). Order is unspecified. A
+non-SIG_OK return from fn stops the walk and becomes its result.</p></section>
+<section class="item" id="sig_project_service_count"><h3>sig_project_service_count</h3><pre>uint32_t sig_project_service_count(const sig_project * project)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>const sig_project *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_project_walk_services"><h3>sig_project_walk_services</h3><pre>sig_status_t sig_project_walk_services(const sig_project * project, sig_project_service_fn fn, void * ctx)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>const sig_project *</code></td></tr><tr><td><code>fn</code></td><td><code>sig_project_service_fn</code></td></tr><tr><td><code>ctx</code></td><td><code>void *</code></td></tr></tbody></table></section>
+<div class="note">---- Editing -------------------------------------------------------
+
+The project keeps the JSON definition of every configuration and
+service. These functions change definitions and persist them to the
+project's store under the key &lt;name&gt; in the &quot;configurations&quot; or
+&quot;services&quot; namespace, saved as the document followed by one newline
+(the file backend writes each key atomically). A document is
+validated exactly as sig_project_load() would; on any failure nothing
+is saved and nothing changes.
+
+A running service is never disturbed: its instances keep borrowing the
+configurations they were built from (a replaced configuration is retired, not
+freed, until sig_project_destroy). See sig_project_service_dirty().
+
+Names must match [A-Za-z0-9_-]{1,64}: SIG_ERR_INVALID_ARG otherwise.
+An invalid document -- bad JSON, wrong shape, unregistered type,
+unknown configuration or receiver -- is SIG_ERR_PARSE. A failed store
+operation is SIG_ERR_PLATFORM (SIG_ERR_ALLOC for want of memory);
+removing a key the store no longer has is not a failure.
+
+Not thread-safe on their own: callers serialize them with each other
+and with service start/stop (sig_runtime_edit() does this).</div>
+<section class="item" id="sig_project_configuration_fn"><h3>sig_project_configuration_fn</h3><pre>typedef sig_status_t (*sig_project_configuration_fn)(const char *name,
+                                                     const sig_capsule_configuration *configuration,
+                                                     void *ctx);</pre></section>
+<section class="item" id="sig_project_name_fn"><h3>sig_project_name_fn</h3><pre>typedef sig_status_t (*sig_project_name_fn)(const char *name, void *ctx);</pre></section>
+<section class="item" id="sig_project_last_error"><h3>sig_project_last_error</h3><pre>const char * sig_project_last_error(const sig_project * project)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>const sig_project *</code></td></tr></tbody></table><p class="doc">Why the most recent put/patch was rejected, for a caller to show: a property
+message from the capsule's table (&quot;end: required&quot;, &quot;step: must be &gt;= 1&quot;), or
+&quot;&quot; when the failure has no more specific reason than the status. Cleared at the
+start of every put/patch; valid until the next edit. Like the edit functions it
+is serialized by sig_runtime_edit(). Never NULL.</p></section>
+<section class="item" id="sig_project_put_configuration"><h3>sig_project_put_configuration</h3><pre>sig_status_t sig_project_put_configuration(sig_project * project, const char * name, const char * json, size_t len, bool * created)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>sig_project *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>json</code></td><td><code>const char *</code></td></tr><tr><td><code>len</code></td><td><code>size_t</code></td></tr><tr><td><code>created</code></td><td><code>bool *</code></td></tr></tbody></table><p class="doc">Creates (*created = true) or replaces (*created = false) a configuration. The document is
+also validated against its capsule's property table (see sig_property).</p></section>
+<section class="item" id="sig_project_patch_configuration"><h3>sig_project_patch_configuration</h3><pre>sig_status_t sig_project_patch_configuration(sig_project * project, const char * name, const char * patch, size_t len)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>sig_project *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>patch</code></td><td><code>const char *</code></td></tr><tr><td><code>len</code></td><td><code>size_t</code></td></tr></tbody></table><p class="doc">JSON Merge Patch (sig_value_merge_patch semantics; null is rejected
+with SIG_ERR_PARSE) applied to the stored definition. SIG_ERR_NOT_FOUND
+if the configuration does not exist.</p></section>
+<section class="item" id="sig_project_delete_configuration"><h3>sig_project_delete_configuration</h3><pre>sig_status_t sig_project_delete_configuration(sig_project * project, const char * name)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>sig_project *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr></tbody></table><p class="doc">SIG_ERR_NOT_FOUND if absent; SIG_ERR_EXISTS if any service definition
+still uses it.</p></section>
+<section class="item" id="sig_project_rename_configuration"><h3>sig_project_rename_configuration</h3><pre>sig_status_t sig_project_rename_configuration(sig_project * project, const char * from, const char * to)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>sig_project *</code></td></tr><tr><td><code>from</code></td><td><code>const char *</code></td></tr><tr><td><code>to</code></td><td><code>const char *</code></td></tr></tbody></table><p class="doc">Renames a configuration, and the references to it in every service
+definition that uses it (the services are saved again, as compact
+JSON). A running service is left running; like any other edit to what it
+uses, the rename makes it dirty until it is restarted. Stopped services
+are rebuilt under the new name straight away. SIG_ERR_NOT_FOUND if `from`
+does not exist, SIG_ERR_EXISTS if `to` does (or equals `from`),
+SIG_ERR_INVALID_ARG for an invalid name. The configuration is validated
+like a put. The rename is a put of the new name, a put of each service,
+then a delete of the old name, so the project and the store agree after
+every step. On a failure those steps are undone, newest first, and the
+project is as it was. If the store keeps failing, the undo can stop
+part way: then both names exist and each service uses one of them --
+a project that runs and loads as it stands.</p></section>
+<section class="item" id="sig_project_get_configuration"><h3>sig_project_get_configuration</h3><pre>sig_status_t sig_project_get_configuration(const sig_project * project, const char * name, const sig_capsule_configuration ** out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>const sig_project *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>out</code></td><td><code>const sig_capsule_configuration **</code></td></tr></tbody></table></section>
+<section class="item" id="sig_project_get_configuration_json"><h3>sig_project_get_configuration_json</h3><pre>sig_status_t sig_project_get_configuration_json(const sig_project * project, const char * name, char ** out, size_t * out_len)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>const sig_project *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>out</code></td><td><code>char **</code></td></tr><tr><td><code>out_len</code></td><td><code>size_t *</code></td></tr></tbody></table><p class="doc">out is a NUL-terminated heap copy of the stored definition the
+caller sig_free()s; *out_len (nullable) excludes the NUL.</p></section>
+<section class="item" id="sig_project_walk_configurations"><h3>sig_project_walk_configurations</h3><pre>sig_status_t sig_project_walk_configurations(const sig_project * project, sig_project_configuration_fn fn, void * ctx)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>const sig_project *</code></td></tr><tr><td><code>fn</code></td><td><code>sig_project_configuration_fn</code></td></tr><tr><td><code>ctx</code></td><td><code>void *</code></td></tr></tbody></table><p class="doc">Unspecified order. A non-SIG_OK return from fn stops the walk and
+becomes the result.</p></section>
+<section class="item" id="sig_project_walk_configuration_uses"><h3>sig_project_walk_configuration_uses</h3><pre>sig_status_t sig_project_walk_configuration_uses(const sig_project * project, const char * configuration_name, sig_project_name_fn fn, void * ctx)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>const sig_project *</code></td></tr><tr><td><code>configuration_name</code></td><td><code>const char *</code></td></tr><tr><td><code>fn</code></td><td><code>sig_project_name_fn</code></td></tr><tr><td><code>ctx</code></td><td><code>void *</code></td></tr></tbody></table><p class="doc">Visits the name of every service whose DEFINITION uses the configuration.</p></section>
+<div class="note">---- services ----</div>
+<section class="item" id="sig_project_put_service"><h3>sig_project_put_service</h3><pre>sig_status_t sig_project_put_service(sig_project * project, const char * name, const char * json, size_t len, bool * created)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>sig_project *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>json</code></td><td><code>const char *</code></td></tr><tr><td><code>len</code></td><td><code>size_t</code></td></tr><tr><td><code>created</code></td><td><code>bool *</code></td></tr></tbody></table><p class="doc">Creates (*created = true) or replaces (*created = false) a service
+definition. Replacing a RUNNING service only changes its definition;
+the live service keeps running unchanged and is reported dirty. A
+stopped service is rebuilt from the new definition immediately.</p></section>
+<section class="item" id="sig_project_patch_service"><h3>sig_project_patch_service</h3><pre>sig_status_t sig_project_patch_service(sig_project * project, const char * name, const char * patch, size_t len)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>sig_project *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>patch</code></td><td><code>const char *</code></td></tr><tr><td><code>len</code></td><td><code>size_t</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_project_put_service">sig_project_put_service</a></p><p class="doc">Creates (*created = true) or replaces (*created = false) a service
+definition. Replacing a RUNNING service only changes its definition;
+the live service keeps running unchanged and is reported dirty. A
+stopped service is rebuilt from the new definition immediately.</p></section>
+<section class="item" id="sig_project_delete_service"><h3>sig_project_delete_service</h3><pre>sig_status_t sig_project_delete_service(sig_project * project, const char * name)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>sig_project *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr></tbody></table><p class="doc">Stops the service if it is running, removes its key from the store and
+its entry.
+SIG_ERR_NOT_FOUND if absent.</p></section>
+<section class="item" id="sig_project_get_service_json"><h3>sig_project_get_service_json</h3><pre>sig_status_t sig_project_get_service_json(const sig_project * project, const char * name, char ** out, size_t * out_len)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>const sig_project *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>out</code></td><td><code>char **</code></td></tr><tr><td><code>out_len</code></td><td><code>size_t *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_project_service_dirty"><h3>sig_project_service_dirty</h3><pre>sig_status_t sig_project_service_dirty(const sig_project * project, const char * name, bool * out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>const sig_project *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>out</code></td><td><code>bool *</code></td></tr></tbody></table><p class="doc">out is true when the service's definition, or the definition of a
+configuration it uses, changed after the live service was built -- i.e. a
+restart would pick up something new.</p></section>
+<section class="item" id="sig_project_refresh_service"><h3>sig_project_refresh_service</h3><pre>sig_status_t sig_project_refresh_service(sig_project * project, const char * name, sig_service ** out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>project</code></td><td><code>sig_project *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>out</code></td><td><code>sig_service **</code></td></tr></tbody></table><p class="doc">If the service is stopped and dirty, rebuilds the live service from
+its definition (invalidating any earlier sig_service pointer for it).
+A running service is left alone. *out is the current live service.</p></section>
+</body></html>

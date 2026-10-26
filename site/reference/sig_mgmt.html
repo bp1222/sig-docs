@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sig_mgmt.h - libsig reference</title><style>:root{color-scheme:light dark;--bg:#fff;--fg:#1b1f24;--mut:#59636e;--bd:#d0d7de;--code:#f6f8fa;--note:#fff8c5;--lnk:#0969da}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--mut:#9198a1;--bd:#30363d;--code:#161b22;--note:#3b2e00;--lnk:#58a6ff}}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;margin:0 auto;max-width:56rem;padding:1rem 16px 3rem}
+a{color:var(--lnk)}code,pre{font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+pre{background:var(--code);padding:.6rem .8rem;overflow-x:auto;border-radius:6px}
+.note{background:var(--note);border-left:4px solid var(--bd);padding:.5rem .8rem;margin:1rem 0;white-space:pre-wrap}
+.item{border-top:1px solid var(--bd);margin-top:1.5rem;padding-top:.5rem}
+.doc{white-space:pre-wrap;color:var(--fg)}table{border-collapse:collapse}th,td{border:1px solid var(--bd);padding:.25rem .6rem;text-align:left}
+nav{color:var(--mut)}.shared{color:var(--mut);font-size:.9em;margin:.4rem 0 0}</style></head>
+<body>
+<nav><a href="index.html">Reference index</a> / mgmt / <a href="/sig-docs/">Architecture site</a></nav>
+<h1>sig_mgmt.h</h1>
+<p><code>include/sig/mgmt/sig_mgmt.h</code></p>
+<section class="item" id="macro-SIG_MGMT_MODULE_NAME"><h3>SIG_MGMT_MODULE_NAME</h3><pre>#define SIG_MGMT_MODULE_NAME &quot;mgmt&quot;</pre><p class="doc">The management module: reads and controls the runtime through plain
+operations (below) that take and return sig_value trees and sig_status_t
+codes. It knows nothing of any transport or wire format; a transport
+(sig_mgmt_http, or anything else) maps its own framing onto these calls.
+
+Register the module with sig_runtime_register_module(rt,
+sig_mgmt_module(), NULL) BEFORE any module that depends on it.</p></section>
+<section class="item" id="sig_mgmt"><h3>sig_mgmt</h3><pre>typedef struct sig_mgmt sig_mgmt;</pre></section>
+<section class="item" id="sig_mgmt_module"><h3>sig_mgmt_module</h3><pre>const sig_runtime_module * sig_mgmt_module()</pre></section>
+<section class="item" id="sig_mgmt_from_runtime"><h3>sig_mgmt_from_runtime</h3><pre>sig_status_t sig_mgmt_from_runtime(sig_runtime * rt, sig_mgmt ** out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>rt</code></td><td><code>sig_runtime *</code></td></tr><tr><td><code>out</code></td><td><code>sig_mgmt **</code></td></tr></tbody></table><p class="doc">Finds the mgmt instance created for `rt` (SIG_ERR_NOT_FOUND if the
+module is not registered, SIG_ERR_STATE if it is registered but not
+yet created).</p></section>
+<section class="item" id="sig_mgmt_system"><h3>sig_mgmt_system</h3><pre>sig_status_t sig_mgmt_system(sig_mgmt * m, sig_value * out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>m</code></td><td><code>sig_mgmt *</code></td></tr><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr></tbody></table><p class="doc">---- Read operations ---------------------------------------------------
+
+Each fills *out with a map/list tree the caller releases with
+sig_value_dtor() on SIG_OK (*out is untouched on failure). The tree is built
+while the shared lock is held and owns all its memory (deep copies, no
+pointers into runtime state), so it stays valid after the call returns, and
+concurrent readers do not block one another. Lists are sorted by name. A
+property value is copied into the tree as it is, whatever its kind; deciding
+how to show kinds a transport cannot express is the transport's business.
+
+Errors: SIG_ERR_INVALID_ARG for a NULL argument; SIG_ERR_NOT_FOUND for an
+object that does not exist, which includes any name that could not name one
+(empty, over 64 characters, or containing a character other than letters,
+digits, '_' and '-', e.g. &quot;..&quot; or &quot;/&quot;); SIG_ERR_STATE when there is no
+project (runtime not running); SIG_ERR_ALLOC.
+
+Trees (field names are part of the contract; state is &quot;running&quot; or
+&quot;stopped&quot;):
+  system:              {version, uptime_seconds, modules: [name]}
+  list_services:       {services: [{name, state, dirty, instances}]}
+  get_service:         {name, state, dirty,
+                        instances: [{name, configuration, type,
+                                     inputs: [name], outputs: [name]}],
+                        links: [{from: {instance, terminal},
+                                 to: {instance, terminal}}]}
+  get_instance:        {name, service, configuration, type,
+                        properties: {key: value}}
+  list_capsules:       {capsules: [{name, category?, inputs, outputs,
+                        properties: [{name, type, required, default?, min?,
+                                      max?, choices?, description}]}]}
+  list_configurations: {configurations: [{name, type}]}
+  get_configuration:   {name, type, config: &lt;definition&gt;, used_by: [service]}
+  get_service_config:  {name, config: &lt;definition&gt;, dirty}</p></section>
+<section class="item" id="sig_mgmt_list_services"><h3>sig_mgmt_list_services</h3><pre>sig_status_t sig_mgmt_list_services(sig_mgmt * m, sig_value * out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>m</code></td><td><code>sig_mgmt *</code></td></tr><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_mgmt_system">sig_mgmt_system</a></p><p class="doc">---- Read operations ---------------------------------------------------
+
+Each fills *out with a map/list tree the caller releases with
+sig_value_dtor() on SIG_OK (*out is untouched on failure). The tree is built
+while the shared lock is held and owns all its memory (deep copies, no
+pointers into runtime state), so it stays valid after the call returns, and
+concurrent readers do not block one another. Lists are sorted by name. A
+property value is copied into the tree as it is, whatever its kind; deciding
+how to show kinds a transport cannot express is the transport's business.
+
+Errors: SIG_ERR_INVALID_ARG for a NULL argument; SIG_ERR_NOT_FOUND for an
+object that does not exist, which includes any name that could not name one
+(empty, over 64 characters, or containing a character other than letters,
+digits, '_' and '-', e.g. &quot;..&quot; or &quot;/&quot;); SIG_ERR_STATE when there is no
+project (runtime not running); SIG_ERR_ALLOC.
+
+Trees (field names are part of the contract; state is &quot;running&quot; or
+&quot;stopped&quot;):
+  system:              {version, uptime_seconds, modules: [name]}
+  list_services:       {services: [{name, state, dirty, instances}]}
+  get_service:         {name, state, dirty,
+                        instances: [{name, configuration, type,
+                                     inputs: [name], outputs: [name]}],
+                        links: [{from: {instance, terminal},
+                                 to: {instance, terminal}}]}
+  get_instance:        {name, service, configuration, type,
+                        properties: {key: value}}
+  list_capsules:       {capsules: [{name, category?, inputs, outputs,
+                        properties: [{name, type, required, default?, min?,
+                                      max?, choices?, description}]}]}
+  list_configurations: {configurations: [{name, type}]}
+  get_configuration:   {name, type, config: &lt;definition&gt;, used_by: [service]}
+  get_service_config:  {name, config: &lt;definition&gt;, dirty}</p></section>
+<section class="item" id="sig_mgmt_get_service"><h3>sig_mgmt_get_service</h3><pre>sig_status_t sig_mgmt_get_service(sig_mgmt * m, const char * name, sig_value * out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>m</code></td><td><code>sig_mgmt *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_mgmt_system">sig_mgmt_system</a></p><p class="doc">---- Read operations ---------------------------------------------------
+
+Each fills *out with a map/list tree the caller releases with
+sig_value_dtor() on SIG_OK (*out is untouched on failure). The tree is built
+while the shared lock is held and owns all its memory (deep copies, no
+pointers into runtime state), so it stays valid after the call returns, and
+concurrent readers do not block one another. Lists are sorted by name. A
+property value is copied into the tree as it is, whatever its kind; deciding
+how to show kinds a transport cannot express is the transport's business.
+
+Errors: SIG_ERR_INVALID_ARG for a NULL argument; SIG_ERR_NOT_FOUND for an
+object that does not exist, which includes any name that could not name one
+(empty, over 64 characters, or containing a character other than letters,
+digits, '_' and '-', e.g. &quot;..&quot; or &quot;/&quot;); SIG_ERR_STATE when there is no
+project (runtime not running); SIG_ERR_ALLOC.
+
+Trees (field names are part of the contract; state is &quot;running&quot; or
+&quot;stopped&quot;):
+  system:              {version, uptime_seconds, modules: [name]}
+  list_services:       {services: [{name, state, dirty, instances}]}
+  get_service:         {name, state, dirty,
+                        instances: [{name, configuration, type,
+                                     inputs: [name], outputs: [name]}],
+                        links: [{from: {instance, terminal},
+                                 to: {instance, terminal}}]}
+  get_instance:        {name, service, configuration, type,
+                        properties: {key: value}}
+  list_capsules:       {capsules: [{name, category?, inputs, outputs,
+                        properties: [{name, type, required, default?, min?,
+                                      max?, choices?, description}]}]}
+  list_configurations: {configurations: [{name, type}]}
+  get_configuration:   {name, type, config: &lt;definition&gt;, used_by: [service]}
+  get_service_config:  {name, config: &lt;definition&gt;, dirty}</p></section>
+<section class="item" id="sig_mgmt_get_instance"><h3>sig_mgmt_get_instance</h3><pre>sig_status_t sig_mgmt_get_instance(sig_mgmt * m, const char * service, const char * instance, sig_value * out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>m</code></td><td><code>sig_mgmt *</code></td></tr><tr><td><code>service</code></td><td><code>const char *</code></td></tr><tr><td><code>instance</code></td><td><code>const char *</code></td></tr><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_mgmt_system">sig_mgmt_system</a></p><p class="doc">---- Read operations ---------------------------------------------------
+
+Each fills *out with a map/list tree the caller releases with
+sig_value_dtor() on SIG_OK (*out is untouched on failure). The tree is built
+while the shared lock is held and owns all its memory (deep copies, no
+pointers into runtime state), so it stays valid after the call returns, and
+concurrent readers do not block one another. Lists are sorted by name. A
+property value is copied into the tree as it is, whatever its kind; deciding
+how to show kinds a transport cannot express is the transport's business.
+
+Errors: SIG_ERR_INVALID_ARG for a NULL argument; SIG_ERR_NOT_FOUND for an
+object that does not exist, which includes any name that could not name one
+(empty, over 64 characters, or containing a character other than letters,
+digits, '_' and '-', e.g. &quot;..&quot; or &quot;/&quot;); SIG_ERR_STATE when there is no
+project (runtime not running); SIG_ERR_ALLOC.
+
+Trees (field names are part of the contract; state is &quot;running&quot; or
+&quot;stopped&quot;):
+  system:              {version, uptime_seconds, modules: [name]}
+  list_services:       {services: [{name, state, dirty, instances}]}
+  get_service:         {name, state, dirty,
+                        instances: [{name, configuration, type,
+                                     inputs: [name], outputs: [name]}],
+                        links: [{from: {instance, terminal},
+                                 to: {instance, terminal}}]}
+  get_instance:        {name, service, configuration, type,
+                        properties: {key: value}}
+  list_capsules:       {capsules: [{name, category?, inputs, outputs,
+                        properties: [{name, type, required, default?, min?,
+                                      max?, choices?, description}]}]}
+  list_configurations: {configurations: [{name, type}]}
+  get_configuration:   {name, type, config: &lt;definition&gt;, used_by: [service]}
+  get_service_config:  {name, config: &lt;definition&gt;, dirty}</p></section>
+<section class="item" id="sig_mgmt_list_capsules"><h3>sig_mgmt_list_capsules</h3><pre>sig_status_t sig_mgmt_list_capsules(sig_mgmt * m, sig_value * out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>m</code></td><td><code>sig_mgmt *</code></td></tr><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_mgmt_system">sig_mgmt_system</a></p><p class="doc">---- Read operations ---------------------------------------------------
+
+Each fills *out with a map/list tree the caller releases with
+sig_value_dtor() on SIG_OK (*out is untouched on failure). The tree is built
+while the shared lock is held and owns all its memory (deep copies, no
+pointers into runtime state), so it stays valid after the call returns, and
+concurrent readers do not block one another. Lists are sorted by name. A
+property value is copied into the tree as it is, whatever its kind; deciding
+how to show kinds a transport cannot express is the transport's business.
+
+Errors: SIG_ERR_INVALID_ARG for a NULL argument; SIG_ERR_NOT_FOUND for an
+object that does not exist, which includes any name that could not name one
+(empty, over 64 characters, or containing a character other than letters,
+digits, '_' and '-', e.g. &quot;..&quot; or &quot;/&quot;); SIG_ERR_STATE when there is no
+project (runtime not running); SIG_ERR_ALLOC.
+
+Trees (field names are part of the contract; state is &quot;running&quot; or
+&quot;stopped&quot;):
+  system:              {version, uptime_seconds, modules: [name]}
+  list_services:       {services: [{name, state, dirty, instances}]}
+  get_service:         {name, state, dirty,
+                        instances: [{name, configuration, type,
+                                     inputs: [name], outputs: [name]}],
+                        links: [{from: {instance, terminal},
+                                 to: {instance, terminal}}]}
+  get_instance:        {name, service, configuration, type,
+                        properties: {key: value}}
+  list_capsules:       {capsules: [{name, category?, inputs, outputs,
+                        properties: [{name, type, required, default?, min?,
+                                      max?, choices?, description}]}]}
+  list_configurations: {configurations: [{name, type}]}
+  get_configuration:   {name, type, config: &lt;definition&gt;, used_by: [service]}
+  get_service_config:  {name, config: &lt;definition&gt;, dirty}</p></section>
+<section class="item" id="sig_mgmt_list_configurations"><h3>sig_mgmt_list_configurations</h3><pre>sig_status_t sig_mgmt_list_configurations(sig_mgmt * m, sig_value * out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>m</code></td><td><code>sig_mgmt *</code></td></tr><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_mgmt_system">sig_mgmt_system</a></p><p class="doc">---- Read operations ---------------------------------------------------
+
+Each fills *out with a map/list tree the caller releases with
+sig_value_dtor() on SIG_OK (*out is untouched on failure). The tree is built
+while the shared lock is held and owns all its memory (deep copies, no
+pointers into runtime state), so it stays valid after the call returns, and
+concurrent readers do not block one another. Lists are sorted by name. A
+property value is copied into the tree as it is, whatever its kind; deciding
+how to show kinds a transport cannot express is the transport's business.
+
+Errors: SIG_ERR_INVALID_ARG for a NULL argument; SIG_ERR_NOT_FOUND for an
+object that does not exist, which includes any name that could not name one
+(empty, over 64 characters, or containing a character other than letters,
+digits, '_' and '-', e.g. &quot;..&quot; or &quot;/&quot;); SIG_ERR_STATE when there is no
+project (runtime not running); SIG_ERR_ALLOC.
+
+Trees (field names are part of the contract; state is &quot;running&quot; or
+&quot;stopped&quot;):
+  system:              {version, uptime_seconds, modules: [name]}
+  list_services:       {services: [{name, state, dirty, instances}]}
+  get_service:         {name, state, dirty,
+                        instances: [{name, configuration, type,
+                                     inputs: [name], outputs: [name]}],
+                        links: [{from: {instance, terminal},
+                                 to: {instance, terminal}}]}
+  get_instance:        {name, service, configuration, type,
+                        properties: {key: value}}
+  list_capsules:       {capsules: [{name, category?, inputs, outputs,
+                        properties: [{name, type, required, default?, min?,
+                                      max?, choices?, description}]}]}
+  list_configurations: {configurations: [{name, type}]}
+  get_configuration:   {name, type, config: &lt;definition&gt;, used_by: [service]}
+  get_service_config:  {name, config: &lt;definition&gt;, dirty}</p></section>
+<section class="item" id="sig_mgmt_get_configuration"><h3>sig_mgmt_get_configuration</h3><pre>sig_status_t sig_mgmt_get_configuration(sig_mgmt * m, const char * name, sig_value * out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>m</code></td><td><code>sig_mgmt *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_mgmt_system">sig_mgmt_system</a></p><p class="doc">---- Read operations ---------------------------------------------------
+
+Each fills *out with a map/list tree the caller releases with
+sig_value_dtor() on SIG_OK (*out is untouched on failure). The tree is built
+while the shared lock is held and owns all its memory (deep copies, no
+pointers into runtime state), so it stays valid after the call returns, and
+concurrent readers do not block one another. Lists are sorted by name. A
+property value is copied into the tree as it is, whatever its kind; deciding
+how to show kinds a transport cannot express is the transport's business.
+
+Errors: SIG_ERR_INVALID_ARG for a NULL argument; SIG_ERR_NOT_FOUND for an
+object that does not exist, which includes any name that could not name one
+(empty, over 64 characters, or containing a character other than letters,
+digits, '_' and '-', e.g. &quot;..&quot; or &quot;/&quot;); SIG_ERR_STATE when there is no
+project (runtime not running); SIG_ERR_ALLOC.
+
+Trees (field names are part of the contract; state is &quot;running&quot; or
+&quot;stopped&quot;):
+  system:              {version, uptime_seconds, modules: [name]}
+  list_services:       {services: [{name, state, dirty, instances}]}
+  get_service:         {name, state, dirty,
+                        instances: [{name, configuration, type,
+                                     inputs: [name], outputs: [name]}],
+                        links: [{from: {instance, terminal},
+                                 to: {instance, terminal}}]}
+  get_instance:        {name, service, configuration, type,
+                        properties: {key: value}}
+  list_capsules:       {capsules: [{name, category?, inputs, outputs,
+                        properties: [{name, type, required, default?, min?,
+                                      max?, choices?, description}]}]}
+  list_configurations: {configurations: [{name, type}]}
+  get_configuration:   {name, type, config: &lt;definition&gt;, used_by: [service]}
+  get_service_config:  {name, config: &lt;definition&gt;, dirty}</p></section>
+<section class="item" id="sig_mgmt_get_service_config"><h3>sig_mgmt_get_service_config</h3><pre>sig_status_t sig_mgmt_get_service_config(sig_mgmt * m, const char * name, sig_value * out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>m</code></td><td><code>sig_mgmt *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_mgmt_system">sig_mgmt_system</a></p><p class="doc">---- Read operations ---------------------------------------------------
+
+Each fills *out with a map/list tree the caller releases with
+sig_value_dtor() on SIG_OK (*out is untouched on failure). The tree is built
+while the shared lock is held and owns all its memory (deep copies, no
+pointers into runtime state), so it stays valid after the call returns, and
+concurrent readers do not block one another. Lists are sorted by name. A
+property value is copied into the tree as it is, whatever its kind; deciding
+how to show kinds a transport cannot express is the transport's business.
+
+Errors: SIG_ERR_INVALID_ARG for a NULL argument; SIG_ERR_NOT_FOUND for an
+object that does not exist, which includes any name that could not name one
+(empty, over 64 characters, or containing a character other than letters,
+digits, '_' and '-', e.g. &quot;..&quot; or &quot;/&quot;); SIG_ERR_STATE when there is no
+project (runtime not running); SIG_ERR_ALLOC.
+
+Trees (field names are part of the contract; state is &quot;running&quot; or
+&quot;stopped&quot;):
+  system:              {version, uptime_seconds, modules: [name]}
+  list_services:       {services: [{name, state, dirty, instances}]}
+  get_service:         {name, state, dirty,
+                        instances: [{name, configuration, type,
+                                     inputs: [name], outputs: [name]}],
+                        links: [{from: {instance, terminal},
+                                 to: {instance, terminal}}]}
+  get_instance:        {name, service, configuration, type,
+                        properties: {key: value}}
+  list_capsules:       {capsules: [{name, category?, inputs, outputs,
+                        properties: [{name, type, required, default?, min?,
+                                      max?, choices?, description}]}]}
+  list_configurations: {configurations: [{name, type}]}
+  get_configuration:   {name, type, config: &lt;definition&gt;, used_by: [service]}
+  get_service_config:  {name, config: &lt;definition&gt;, dirty}</p></section>
+<section class="item" id="sig_mgmt_start_service"><h3>sig_mgmt_start_service</h3><pre>sig_status_t sig_mgmt_start_service(sig_mgmt * m, const char * name, sig_value * out_state)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>m</code></td><td><code>sig_mgmt *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>out_state</code></td><td><code>sig_value *</code></td></tr></tbody></table><p class="doc">---- Action and edit operations -----------------------------------------
+
+Locking. An operation never calls another operation while holding the
+lock. Edit operations hold the exclusive lock only while the project is
+edited (they wait for in-flight readers to drain, and readers wait for them);
+the result tree is built afterwards from text the edit copied out, so no
+project pointer outlives the lock. start/stop/restart/shutdown hold none of
+this module's lock while the runtime runs the service's hooks, which may
+block for long; only the short lookup that builds `out_state` takes the
+shared lock, plus a short exclusive section when a stopped service has to be
+rebuilt from an edited definition (the old live service is freed, which no
+reader may be looking at). The rebuild only ever runs in that exclusive
+section; the hooks never do. Residual stall, inherent in sig_runtime_edit():
+an edit or rebuild that waits on the runtime's control mutex behind a slow
+start of another service holds the exclusive lock while it waits, so reads
+stall until that start returns.
+
+Actions.
+  sig_mgmt_start_service / _stop_service / _restart_service: on SIG_OK
+  *out_state is the map {name, state} (&quot;running&quot; | &quot;stopped&quot;), owned by the
+  caller (sig_value_dtor), untouched on failure. Stopping a stopped service
+  is SIG_OK. They block until the service's hooks have run. Restart is not
+  one atomic runtime call: it is a stop followed by a start, so a concurrent
+  start can win in between (SIG_ERR_EXISTS), and if the rebuild or the start
+  fails the service is left stopped. A start that is repeatedly overtaken by
+  a concurrent stop or edit of the same service gives up after a few
+  attempts with SIG_ERR_STATE.
+  Errors: SIG_ERR_NOT_FOUND (no such service, including any name that could
+  not name one); SIG_ERR_EXISTS (start of a running service);
+  SIG_ERR_STATE (runtime not running, or the service vanished before its
+  state could be read); SIG_ERR_INVALID_ARG (a NULL argument, or the service
+  could not start because a capsule configuration is invalid; the host log
+  has the detail); anything else the runtime returns is passed through.
+  sig_mgmt_request_shutdown asks the runtime to shut down and returns
+  SIG_OK (SIG_ERR_INVALID_ARG for NULL); it does not wait.
+
+Edits. Each takes the document as text, `doc` of `doc_len` bytes, exactly as
+the project layer's put/patch functions do; `errmsg` (optional, may be NULL)
+receives a NUL-terminated reason of at most errmsg_len-1 bytes, empty unless
+stated below. `out` receives an owned tree on SIG_OK and is untouched on
+failure:
+  put/patch_configuration:  {name, config: &lt;definition&gt;}
+  put/patch_service:        {name, config: &lt;definition&gt;, dirty}
+  rename_configuration:     {name: &lt;new name&gt;, config: &lt;definition&gt;}
+`*created` (put only) tells whether the object is new. Rename takes the new
+name as a plain string. On failure nothing was changed.
+
+Errors, and what `errmsg` carries with each:
+  SIG_ERR_INVALID_ARG  a NULL argument; a name or new name the project
+                       refuses (empty, too long, or with a character other
+                       than letters, digits, '_' and '-'); a new name of 80
+                       bytes or more; an empty or NULL `doc` (errmsg is
+                       &quot;document required&quot;). errmsg is empty for every
+                       other cause, so a non-empty errmsg names the empty
+                       document.
+  SIG_ERR_PARSE        the document failed validation; errmsg is the
+                       project's reason for configurations, and empty for
+                       services (the reason is only in the host log).
+  SIG_ERR_NOT_FOUND    no such configuration or service (put creates, so only
+                       patch, delete and rename report it).
+  SIG_ERR_EXISTS       delete of a configuration a service uses (errmsg
+                       empty), or rename onto a name that is taken, which
+                       includes renaming to its own name (errmsg is the
+                       sentence naming the taken name).
+  SIG_ERR_STATE        the runtime is not running.
+  other                a failure inside the runtime or project.
+An edit that succeeded in the project but could not build `out` returns
+SIG_ERR_ALLOC with the edit already applied.</p></section>
+<section class="item" id="sig_mgmt_stop_service"><h3>sig_mgmt_stop_service</h3><pre>sig_status_t sig_mgmt_stop_service(sig_mgmt * m, const char * name, sig_value * out_state)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>m</code></td><td><code>sig_mgmt *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>out_state</code></td><td><code>sig_value *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_mgmt_start_service">sig_mgmt_start_service</a></p><p class="doc">---- Action and edit operations -----------------------------------------
+
+Locking. An operation never calls another operation while holding the
+lock. Edit operations hold the exclusive lock only while the project is
+edited (they wait for in-flight readers to drain, and readers wait for them);
+the result tree is built afterwards from text the edit copied out, so no
+project pointer outlives the lock. start/stop/restart/shutdown hold none of
+this module's lock while the runtime runs the service's hooks, which may
+block for long; only the short lookup that builds `out_state` takes the
+shared lock, plus a short exclusive section when a stopped service has to be
+rebuilt from an edited definition (the old live service is freed, which no
+reader may be looking at). The rebuild only ever runs in that exclusive
+section; the hooks never do. Residual stall, inherent in sig_runtime_edit():
+an edit or rebuild that waits on the runtime's control mutex behind a slow
+start of another service holds the exclusive lock while it waits, so reads
+stall until that start returns.
+
+Actions.
+  sig_mgmt_start_service / _stop_service / _restart_service: on SIG_OK
+  *out_state is the map {name, state} (&quot;running&quot; | &quot;stopped&quot;), owned by the
+  caller (sig_value_dtor), untouched on failure. Stopping a stopped service
+  is SIG_OK. They block until the service's hooks have run. Restart is not
+  one atomic runtime call: it is a stop followed by a start, so a concurrent
+  start can win in between (SIG_ERR_EXISTS), and if the rebuild or the start
+  fails the service is left stopped. A start that is repeatedly overtaken by
+  a concurrent stop or edit of the same service gives up after a few
+  attempts with SIG_ERR_STATE.
+  Errors: SIG_ERR_NOT_FOUND (no such service, including any name that could
+  not name one); SIG_ERR_EXISTS (start of a running service);
+  SIG_ERR_STATE (runtime not running, or the service vanished before its
+  state could be read); SIG_ERR_INVALID_ARG (a NULL argument, or the service
+  could not start because a capsule configuration is invalid; the host log
+  has the detail); anything else the runtime returns is passed through.
+  sig_mgmt_request_shutdown asks the runtime to shut down and returns
+  SIG_OK (SIG_ERR_INVALID_ARG for NULL); it does not wait.
+
+Edits. Each takes the document as text, `doc` of `doc_len` bytes, exactly as
+the project layer's put/patch functions do; `errmsg` (optional, may be NULL)
+receives a NUL-terminated reason of at most errmsg_len-1 bytes, empty unless
+stated below. `out` receives an owned tree on SIG_OK and is untouched on
+failure:
+  put/patch_configuration:  {name, config: &lt;definition&gt;}
+  put/patch_service:        {name, config: &lt;definition&gt;, dirty}
+  rename_configuration:     {name: &lt;new name&gt;, config: &lt;definition&gt;}
+`*created` (put only) tells whether the object is new. Rename takes the new
+name as a plain string. On failure nothing was changed.
+
+Errors, and what `errmsg` carries with each:
+  SIG_ERR_INVALID_ARG  a NULL argument; a name or new name the project
+                       refuses (empty, too long, or with a character other
+                       than letters, digits, '_' and '-'); a new name of 80
+                       bytes or more; an empty or NULL `doc` (errmsg is
+                       &quot;document required&quot;). errmsg is empty for every
+                       other cause, so a non-empty errmsg names the empty
+                       document.
+  SIG_ERR_PARSE        the document failed validation; errmsg is the
+                       project's reason for configurations, and empty for
+                       services (the reason is only in the host log).
+  SIG_ERR_NOT_FOUND    no such configuration or service (put creates, so only
+                       patch, delete and rename report it).
+  SIG_ERR_EXISTS       delete of a configuration a service uses (errmsg
+                       empty), or rename onto a name that is taken, which
+                       includes renaming to its own name (errmsg is the
+                       sentence naming the taken name).
+  SIG_ERR_STATE        the runtime is not running.
+  other                a failure inside the runtime or project.
+An edit that succeeded in the project but could not build `out` returns
+SIG_ERR_ALLOC with the edit already applied.</p></section>
+<section class="item" id="sig_mgmt_restart_service"><h3>sig_mgmt_restart_service</h3><pre>sig_status_t sig_mgmt_restart_service(sig_mgmt * m, const char * name, sig_value * out_state)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>m</code></td><td><code>sig_mgmt *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>out_state</code></td><td><code>sig_value *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_mgmt_start_service">sig_mgmt_start_service</a></p><p class="doc">---- Action and edit operations -----------------------------------------
+
+Locking. An operation never calls another operation while holding the
+lock. Edit operations hold the exclusive lock only while the project is
+edited (they wait for in-flight readers to drain, and readers wait for them);
+the result tree is built afterwards from text the edit copied out, so no
+project pointer outlives the lock. start/stop/restart/shutdown hold none of
+this module's lock while the runtime runs the service's hooks, which may
+block for long; only the short lookup that builds `out_state` takes the
+shared lock, plus a short exclusive section when a stopped service has to be
+rebuilt from an edited definition (the old live service is freed, which no
+reader may be looking at). The rebuild only ever runs in that exclusive
+section; the hooks never do. Residual stall, inherent in sig_runtime_edit():
+an edit or rebuild that waits on the runtime's control mutex behind a slow
+start of another service holds the exclusive lock while it waits, so reads
+stall until that start returns.
+
+Actions.
+  sig_mgmt_start_service / _stop_service / _restart_service: on SIG_OK
+  *out_state is the map {name, state} (&quot;running&quot; | &quot;stopped&quot;), owned by the
+  caller (sig_value_dtor), untouched on failure. Stopping a stopped service
+  is SIG_OK. They block until the service's hooks have run. Restart is not
+  one atomic runtime call: it is a stop followed by a start, so a concurrent
+  start can win in between (SIG_ERR_EXISTS), and if the rebuild or the start
+  fails the service is left stopped. A start that is repeatedly overtaken by
+  a concurrent stop or edit of the same service gives up after a few
+  attempts with SIG_ERR_STATE.
+  Errors: SIG_ERR_NOT_FOUND (no such service, including any name that could
+  not name one); SIG_ERR_EXISTS (start of a running service);
+  SIG_ERR_STATE (runtime not running, or the service vanished before its
+  state could be read); SIG_ERR_INVALID_ARG (a NULL argument, or the service
+  could not start because a capsule configuration is invalid; the host log
+  has the detail); anything else the runtime returns is passed through.
+  sig_mgmt_request_shutdown asks the runtime to shut down and returns
+  SIG_OK (SIG_ERR_INVALID_ARG for NULL); it does not wait.
+
+Edits. Each takes the document as text, `doc` of `doc_len` bytes, exactly as
+the project layer's put/patch functions do; `errmsg` (optional, may be NULL)
+receives a NUL-terminated reason of at most errmsg_len-1 bytes, empty unless
+stated below. `out` receives an owned tree on SIG_OK and is untouched on
+failure:
+  put/patch_configuration:  {name, config: &lt;definition&gt;}
+  put/patch_service:        {name, config: &lt;definition&gt;, dirty}
+  rename_configuration:     {name: &lt;new name&gt;, config: &lt;definition&gt;}
+`*created` (put only) tells whether the object is new. Rename takes the new
+name as a plain string. On failure nothing was changed.
+
+Errors, and what `errmsg` carries with each:
+  SIG_ERR_INVALID_ARG  a NULL argument; a name or new name the project
+                       refuses (empty, too long, or with a character other
+                       than letters, digits, '_' and '-'); a new name of 80
+                       bytes or more; an empty or NULL `doc` (errmsg is
+                       &quot;document required&quot;). errmsg is empty for every
+                       other cause, so a non-empty errmsg names the empty
+                       document.
+  SIG_ERR_PARSE        the document failed validation; errmsg is the
+                       project's reason for configurations, and empty for
+                       services (the reason is only in the host log).
+  SIG_ERR_NOT_FOUND    no such configuration or service (put creates, so only
+                       patch, delete and rename report it).
+  SIG_ERR_EXISTS       delete of a configuration a service uses (errmsg
+                       empty), or rename onto a name that is taken, which
+                       includes renaming to its own name (errmsg is the
+                       sentence naming the taken name).
+  SIG_ERR_STATE        the runtime is not running.
+  other                a failure inside the runtime or project.
+An edit that succeeded in the project but could not build `out` returns
+SIG_ERR_ALLOC with the edit already applied.</p></section>
+<section class="item" id="sig_mgmt_request_shutdown"><h3>sig_mgmt_request_shutdown</h3><pre>sig_status_t sig_mgmt_request_shutdown(sig_mgmt * m)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>m</code></td><td><code>sig_mgmt *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_mgmt_start_service">sig_mgmt_start_service</a></p><p class="doc">---- Action and edit operations -----------------------------------------
+
+Locking. An operation never calls another operation while holding the
+lock. Edit operations hold the exclusive lock only while the project is
+edited (they wait for in-flight readers to drain, and readers wait for them);
+the result tree is built afterwards from text the edit copied out, so no
+project pointer outlives the lock. start/stop/restart/shutdown hold none of
+this module's lock while the runtime runs the service's hooks, which may
+block for long; only the short lookup that builds `out_state` takes the
+shared lock, plus a short exclusive section when a stopped service has to be
+rebuilt from an edited definition (the old live service is freed, which no
+reader may be looking at). The rebuild only ever runs in that exclusive
+section; the hooks never do. Residual stall, inherent in sig_runtime_edit():
+an edit or rebuild that waits on the runtime's control mutex behind a slow
+start of another service holds the exclusive lock while it waits, so reads
+stall until that start returns.
+
+Actions.
+  sig_mgmt_start_service / _stop_service / _restart_service: on SIG_OK
+  *out_state is the map {name, state} (&quot;running&quot; | &quot;stopped&quot;), owned by the
+  caller (sig_value_dtor), untouched on failure. Stopping a stopped service
+  is SIG_OK. They block until the service's hooks have run. Restart is not
+  one atomic runtime call: it is a stop followed by a start, so a concurrent
+  start can win in between (SIG_ERR_EXISTS), and if the rebuild or the start
+  fails the service is left stopped. A start that is repeatedly overtaken by
+  a concurrent stop or edit of the same service gives up after a few
+  attempts with SIG_ERR_STATE.
+  Errors: SIG_ERR_NOT_FOUND (no such service, including any name that could
+  not name one); SIG_ERR_EXISTS (start of a running service);
+  SIG_ERR_STATE (runtime not running, or the service vanished before its
+  state could be read); SIG_ERR_INVALID_ARG (a NULL argument, or the service
+  could not start because a capsule configuration is invalid; the host log
+  has the detail); anything else the runtime returns is passed through.
+  sig_mgmt_request_shutdown asks the runtime to shut down and returns
+  SIG_OK (SIG_ERR_INVALID_ARG for NULL); it does not wait.
+
+Edits. Each takes the document as text, `doc` of `doc_len` bytes, exactly as
+the project layer's put/patch functions do; `errmsg` (optional, may be NULL)
+receives a NUL-terminated reason of at most errmsg_len-1 bytes, empty unless
+stated below. `out` receives an owned tree on SIG_OK and is untouched on
+failure:
+  put/patch_configuration:  {name, config: &lt;definition&gt;}
+  put/patch_service:        {name, config: &lt;definition&gt;, dirty}
+  rename_configuration:     {name: &lt;new name&gt;, config: &lt;definition&gt;}
+`*created` (put only) tells whether the object is new. Rename takes the new
+name as a plain string. On failure nothing was changed.
+
+Errors, and what `errmsg` carries with each:
+  SIG_ERR_INVALID_ARG  a NULL argument; a name or new name the project
+                       refuses (empty, too long, or with a character other
+                       than letters, digits, '_' and '-'); a new name of 80
+                       bytes or more; an empty or NULL `doc` (errmsg is
+                       &quot;document required&quot;). errmsg is empty for every
+                       other cause, so a non-empty errmsg names the empty
+                       document.
+  SIG_ERR_PARSE        the document failed validation; errmsg is the
+                       project's reason for configurations, and empty for
+                       services (the reason is only in the host log).
+  SIG_ERR_NOT_FOUND    no such configuration or service (put creates, so only
+                       patch, delete and rename report it).
+  SIG_ERR_EXISTS       delete of a configuration a service uses (errmsg
+                       empty), or rename onto a name that is taken, which
+                       includes renaming to its own name (errmsg is the
+                       sentence naming the taken name).
+  SIG_ERR_STATE        the runtime is not running.
+  other                a failure inside the runtime or project.
+An edit that succeeded in the project but could not build `out` returns
+SIG_ERR_ALLOC with the edit already applied.</p></section>
+<section class="item" id="sig_mgmt_put_configuration"><h3>sig_mgmt_put_configuration</h3><pre>sig_status_t sig_mgmt_put_configuration(sig_mgmt * m, const char * name, const char * doc, size_t doc_len, bool * created, sig_value * out, char * errmsg, size_t errmsg_len)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>m</code></td><td><code>sig_mgmt *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>doc</code></td><td><code>const char *</code></td></tr><tr><td><code>doc_len</code></td><td><code>size_t</code></td></tr><tr><td><code>created</code></td><td><code>bool *</code></td></tr><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr><tr><td><code>errmsg</code></td><td><code>char *</code></td></tr><tr><td><code>errmsg_len</code></td><td><code>size_t</code></td></tr></tbody></table></section>
+<section class="item" id="sig_mgmt_patch_configuration"><h3>sig_mgmt_patch_configuration</h3><pre>sig_status_t sig_mgmt_patch_configuration(sig_mgmt * m, const char * name, const char * doc, size_t doc_len, sig_value * out, char * errmsg, size_t errmsg_len)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>m</code></td><td><code>sig_mgmt *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>doc</code></td><td><code>const char *</code></td></tr><tr><td><code>doc_len</code></td><td><code>size_t</code></td></tr><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr><tr><td><code>errmsg</code></td><td><code>char *</code></td></tr><tr><td><code>errmsg_len</code></td><td><code>size_t</code></td></tr></tbody></table></section>
+<section class="item" id="sig_mgmt_delete_configuration"><h3>sig_mgmt_delete_configuration</h3><pre>sig_status_t sig_mgmt_delete_configuration(sig_mgmt * m, const char * name)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>m</code></td><td><code>sig_mgmt *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_mgmt_rename_configuration"><h3>sig_mgmt_rename_configuration</h3><pre>sig_status_t sig_mgmt_rename_configuration(sig_mgmt * m, const char * name, const char * new_name, sig_value * out, char * errmsg, size_t errmsg_len)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>m</code></td><td><code>sig_mgmt *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>new_name</code></td><td><code>const char *</code></td></tr><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr><tr><td><code>errmsg</code></td><td><code>char *</code></td></tr><tr><td><code>errmsg_len</code></td><td><code>size_t</code></td></tr></tbody></table></section>
+<section class="item" id="sig_mgmt_put_service"><h3>sig_mgmt_put_service</h3><pre>sig_status_t sig_mgmt_put_service(sig_mgmt * m, const char * name, const char * doc, size_t doc_len, bool * created, sig_value * out, char * errmsg, size_t errmsg_len)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>m</code></td><td><code>sig_mgmt *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>doc</code></td><td><code>const char *</code></td></tr><tr><td><code>doc_len</code></td><td><code>size_t</code></td></tr><tr><td><code>created</code></td><td><code>bool *</code></td></tr><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr><tr><td><code>errmsg</code></td><td><code>char *</code></td></tr><tr><td><code>errmsg_len</code></td><td><code>size_t</code></td></tr></tbody></table></section>
+<section class="item" id="sig_mgmt_patch_service"><h3>sig_mgmt_patch_service</h3><pre>sig_status_t sig_mgmt_patch_service(sig_mgmt * m, const char * name, const char * doc, size_t doc_len, sig_value * out, char * errmsg, size_t errmsg_len)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>m</code></td><td><code>sig_mgmt *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>doc</code></td><td><code>const char *</code></td></tr><tr><td><code>doc_len</code></td><td><code>size_t</code></td></tr><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr><tr><td><code>errmsg</code></td><td><code>char *</code></td></tr><tr><td><code>errmsg_len</code></td><td><code>size_t</code></td></tr></tbody></table></section>
+<section class="item" id="sig_mgmt_delete_service"><h3>sig_mgmt_delete_service</h3><pre>sig_status_t sig_mgmt_delete_service(sig_mgmt * m, const char * name)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>m</code></td><td><code>sig_mgmt *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr></tbody></table></section>
+</body></html>

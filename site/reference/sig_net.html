@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sig_net.h - libsig reference</title><style>:root{color-scheme:light dark;--bg:#fff;--fg:#1b1f24;--mut:#59636e;--bd:#d0d7de;--code:#f6f8fa;--note:#fff8c5;--lnk:#0969da}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--mut:#9198a1;--bd:#30363d;--code:#161b22;--note:#3b2e00;--lnk:#58a6ff}}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;margin:0 auto;max-width:56rem;padding:1rem 16px 3rem}
+a{color:var(--lnk)}code,pre{font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+pre{background:var(--code);padding:.6rem .8rem;overflow-x:auto;border-radius:6px}
+.note{background:var(--note);border-left:4px solid var(--bd);padding:.5rem .8rem;margin:1rem 0;white-space:pre-wrap}
+.item{border-top:1px solid var(--bd);margin-top:1.5rem;padding-top:.5rem}
+.doc{white-space:pre-wrap;color:var(--fg)}table{border-collapse:collapse}th,td{border:1px solid var(--bd);padding:.25rem .6rem;text-align:left}
+nav{color:var(--mut)}.shared{color:var(--mut);font-size:.9em;margin:.4rem 0 0}</style></head>
+<body>
+<nav><a href="index.html">Reference index</a> / platform / <a href="/sig-docs/">Architecture site</a></nav>
+<h1>sig_net.h</h1>
+<p><code>include/sig/net/sig_net.h</code></p>
+<div class="note">Minimal TCP server primitives, sitting beside sig_thread.h. POSIX
+(BSD sockets) only for now; an RTOS port replaces just this shim.
+Not part of sig::sig: it is the optional sig::net target (SIG_NET),
+used by sig::http_server. IPv4 only.</div>
+<section class="item" id="sig_net_listener"><h3>sig_net_listener</h3><pre>typedef struct sig_net_listener sig_net_listener;</pre></section>
+<section class="item" id="sig_net_conn"><h3>sig_net_conn</h3><pre>typedef struct sig_net_conn sig_net_conn;</pre></section>
+<section class="item" id="sig_net_listen"><h3>sig_net_listen</h3><pre>sig_status_t sig_net_listen(const char * addr, uint16_t port, sig_net_listener ** out, uint16_t * out_port)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>addr</code></td><td><code>const char *</code></td></tr><tr><td><code>port</code></td><td><code>uint16_t</code></td></tr><tr><td><code>out</code></td><td><code>sig_net_listener **</code></td></tr><tr><td><code>out_port</code></td><td><code>uint16_t *</code></td></tr></tbody></table><p class="doc">A negative timeout_ms (to accept/read/write_all) means wait forever
+(it is passed straight to poll()); 0 polls without blocking.
+
+`addr` must be a numeric IPv4 address (e.g. &quot;127.0.0.1&quot;,
+&quot;0.0.0.0&quot;): SIG_ERR_INVALID_ARG otherwise. port 0 binds an
+ephemeral port; the bound port is stored in *out_port (nullable).
+Bind/listen failure (address in use, permission) is
+SIG_ERR_PLATFORM.</p></section>
+<section class="item" id="sig_net_accept"><h3>sig_net_accept</h3><pre>sig_status_t sig_net_accept(sig_net_listener * l, int timeout_ms, sig_net_conn ** out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>l</code></td><td><code>sig_net_listener *</code></td></tr><tr><td><code>timeout_ms</code></td><td><code>int</code></td></tr><tr><td><code>out</code></td><td><code>sig_net_conn **</code></td></tr></tbody></table><p class="doc">Waits up to timeout_ms for a connection. SIG_ERR_TIMEOUT if none
+arrived (also for a spurious wakeup); *out untouched in that case.</p></section>
+<section class="item" id="sig_net_read"><h3>sig_net_read</h3><pre>sig_status_t sig_net_read(sig_net_conn * c, void * buf, size_t len, int timeout_ms, size_t * out_n)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>c</code></td><td><code>sig_net_conn *</code></td></tr><tr><td><code>buf</code></td><td><code>void *</code></td></tr><tr><td><code>len</code></td><td><code>size_t</code></td></tr><tr><td><code>timeout_ms</code></td><td><code>int</code></td></tr><tr><td><code>out_n</code></td><td><code>size_t *</code></td></tr></tbody></table><p class="doc">Reads up to len bytes, waiting up to timeout_ms for the first
+byte. SIG_OK with *out_n == 0 means the peer closed.
+SIG_ERR_TIMEOUT if nothing arrived in time.</p></section>
+<section class="item" id="sig_net_write_all"><h3>sig_net_write_all</h3><pre>sig_status_t sig_net_write_all(sig_net_conn * c, const void * buf, size_t len, int timeout_ms)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>c</code></td><td><code>sig_net_conn *</code></td></tr><tr><td><code>buf</code></td><td><code>const void *</code></td></tr><tr><td><code>len</code></td><td><code>size_t</code></td></tr><tr><td><code>timeout_ms</code></td><td><code>int</code></td></tr></tbody></table><p class="doc">Writes all len bytes; timeout_ms bounds each wait for the socket to
+become writable. SIG_ERR_TIMEOUT on a stalled peer, SIG_ERR_PLATFORM
+on a broken connection. Never raises SIGPIPE.</p></section>
+<section class="item" id="sig_net_listener_fd"><h3>sig_net_listener_fd</h3><pre>int sig_net_listener_fd(const sig_net_listener * l)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>l</code></td><td><code>const sig_net_listener *</code></td></tr></tbody></table><p class="doc">Event-loop use. The sockets are always non-blocking, so with timeout_ms 0
+sig_net_accept() and sig_net_read() are polls: SIG_ERR_TIMEOUT means &quot;not
+ready, try when the loop says so&quot;. The descriptors are for registering with a
+sig_loop; they stay owned by the listener/connection and are valid until it
+is closed (unwatch first).</p></section>
+<section class="item" id="sig_net_conn_fd"><h3>sig_net_conn_fd</h3><pre>int sig_net_conn_fd(const sig_net_conn * c)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>c</code></td><td><code>const sig_net_conn *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_net_listener_fd">sig_net_listener_fd</a></p><p class="doc">Event-loop use. The sockets are always non-blocking, so with timeout_ms 0
+sig_net_accept() and sig_net_read() are polls: SIG_ERR_TIMEOUT means &quot;not
+ready, try when the loop says so&quot;. The descriptors are for registering with a
+sig_loop; they stay owned by the listener/connection and are valid until it
+is closed (unwatch first).</p></section>
+<section class="item" id="sig_net_write"><h3>sig_net_write</h3><pre>sig_status_t sig_net_write(sig_net_conn * c, const void * buf, size_t len, size_t * out_n)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>c</code></td><td><code>sig_net_conn *</code></td></tr><tr><td><code>buf</code></td><td><code>const void *</code></td></tr><tr><td><code>len</code></td><td><code>size_t</code></td></tr><tr><td><code>out_n</code></td><td><code>size_t *</code></td></tr></tbody></table><p class="doc">Writes as much of buf as the socket takes right now without waiting:
+SIG_OK with *out_n bytes accepted (possibly fewer than len, never 0 for a
+non-empty write), or SIG_ERR_TIMEOUT if it would block (*out_n is 0 -- wait
+for the socket to become writable and call again), or SIG_ERR_PLATFORM on a
+broken connection. Never raises SIGPIPE.</p></section>
+<section class="item" id="sig_net_conn_close"><h3>sig_net_conn_close</h3><pre>void sig_net_conn_close(sig_net_conn * c)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>c</code></td><td><code>sig_net_conn *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_net_listener_close"><h3>sig_net_listener_close</h3><pre>void sig_net_listener_close(sig_net_listener * l)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>l</code></td><td><code>sig_net_listener *</code></td></tr></tbody></table></section>
+</body></html>

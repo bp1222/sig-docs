@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sig_poller.h - libsig reference</title><style>:root{color-scheme:light dark;--bg:#fff;--fg:#1b1f24;--mut:#59636e;--bd:#d0d7de;--code:#f6f8fa;--note:#fff8c5;--lnk:#0969da}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--mut:#9198a1;--bd:#30363d;--code:#161b22;--note:#3b2e00;--lnk:#58a6ff}}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;margin:0 auto;max-width:56rem;padding:1rem 16px 3rem}
+a{color:var(--lnk)}code,pre{font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+pre{background:var(--code);padding:.6rem .8rem;overflow-x:auto;border-radius:6px}
+.note{background:var(--note);border-left:4px solid var(--bd);padding:.5rem .8rem;margin:1rem 0;white-space:pre-wrap}
+.item{border-top:1px solid var(--bd);margin-top:1.5rem;padding-top:.5rem}
+.doc{white-space:pre-wrap;color:var(--fg)}table{border-collapse:collapse}th,td{border:1px solid var(--bd);padding:.25rem .6rem;text-align:left}
+nav{color:var(--mut)}.shared{color:var(--mut);font-size:.9em;margin:.4rem 0 0}</style></head>
+<body>
+<nav><a href="index.html">Reference index</a> / platform / <a href="/sig-docs/">Architecture site</a></nav>
+<h1>sig_poller.h</h1>
+<p><code>include/sig/platform/sig_poller.h</code></p>
+<div class="note">The readiness-notification backend under sig_loop (see sig_loop.h): the one
+place that knows about poll(), kqueue or epoll. Exactly one implementation is
+linked into libsig, chosen with -DSIG_POLLER=&lt;name&gt;
+(src/platform/posix/sig_poller_&lt;name&gt;.c). A port to another system supplies
+its own file with these functions; the loop and everything above it are
+unchanged.
+
+A poller watches file descriptors (sockets, pipes) for readiness. Rules every
+backend must keep:
+ - Level-triggered: an fd stays reported for as long as it is ready. Callers
+   read or write once per report and rely on being told again.
+ - Only sig_poller_wake() may be called from a thread other than the one in
+   sig_poller_wait(). Add, modify and remove are made by the waiting thread
+   (or before it starts).
+ - An fd that is closed must be removed first.</div>
+<section class="item" id="macro-SIG_POLL_READ"><h3>SIG_POLL_READ</h3><pre>#define SIG_POLL_READ  0x1u</pre><p class="doc">readable, or a connection to accept, or the peer closed</p></section>
+<section class="item" id="macro-SIG_POLL_WRITE"><h3>SIG_POLL_WRITE</h3><pre>#define SIG_POLL_WRITE 0x2u</pre><p class="doc">writable</p></section>
+<section class="item" id="macro-SIG_POLL_ERROR"><h3>SIG_POLL_ERROR</h3><pre>#define SIG_POLL_ERROR 0x4u</pre><p class="doc">error or hang-up; set alongside the events asked for, never requested</p></section>
+<section class="item" id="sig_poller"><h3>sig_poller</h3><pre>typedef struct sig_poller sig_poller;</pre></section>
+<section class="item" id="sig_poller_event"><h3>sig_poller_event</h3><pre>typedef struct {
+    int fd;
+    unsigned events; /* SIG_POLL_* bits */
+} sig_poller_event;</pre></section>
+<section class="item" id="sig_poller_create"><h3>sig_poller_create</h3><pre>sig_status_t sig_poller_create(sig_poller ** out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>out</code></td><td><code>sig_poller **</code></td></tr></tbody></table></section>
+<section class="item" id="sig_poller_destroy"><h3>sig_poller_destroy</h3><pre>void sig_poller_destroy(sig_poller * p)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>p</code></td><td><code>sig_poller *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_poller_add"><h3>sig_poller_add</h3><pre>sig_status_t sig_poller_add(sig_poller * p, int fd, unsigned events)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>p</code></td><td><code>sig_poller *</code></td></tr><tr><td><code>fd</code></td><td><code>int</code></td></tr><tr><td><code>events</code></td><td><code>unsigned</code></td></tr></tbody></table><p class="doc">Starts watching fd for `events` (SIG_POLL_READ and/or SIG_POLL_WRITE; 0 is
+allowed and parks the fd -- some systems then report nothing for it, not even errors). SIG_ERR_EXISTS if fd is already
+watched.</p></section>
+<section class="item" id="sig_poller_modify"><h3>sig_poller_modify</h3><pre>sig_status_t sig_poller_modify(sig_poller * p, int fd, unsigned events)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>p</code></td><td><code>sig_poller *</code></td></tr><tr><td><code>fd</code></td><td><code>int</code></td></tr><tr><td><code>events</code></td><td><code>unsigned</code></td></tr></tbody></table><p class="doc">Changes the interest of a watched fd. SIG_ERR_NOT_FOUND if it is not.</p></section>
+<section class="item" id="sig_poller_remove"><h3>sig_poller_remove</h3><pre>void sig_poller_remove(sig_poller * p, int fd)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>p</code></td><td><code>sig_poller *</code></td></tr><tr><td><code>fd</code></td><td><code>int</code></td></tr></tbody></table><p class="doc">Stops watching fd. Not watched is a no-op.</p></section>
+<section class="item" id="sig_poller_wait"><h3>sig_poller_wait</h3><pre>sig_status_t sig_poller_wait(sig_poller * p, int timeout_ms, sig_poller_event * out, size_t max, size_t * out_n)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>p</code></td><td><code>sig_poller *</code></td></tr><tr><td><code>timeout_ms</code></td><td><code>int</code></td></tr><tr><td><code>out</code></td><td><code>sig_poller_event *</code></td></tr><tr><td><code>max</code></td><td><code>size_t</code></td></tr><tr><td><code>out_n</code></td><td><code>size_t *</code></td></tr></tbody></table><p class="doc">Waits up to timeout_ms (negative: no limit, 0: just poll) for readiness and
+stores up to `max` events in `out`; *out_n is how many. SIG_OK with *out_n == 0
+is a timeout, a sig_poller_wake(), or an interrupted wait. Anything ready
+beyond `max` is reported by the next call.</p></section>
+<section class="item" id="sig_poller_wake"><h3>sig_poller_wake</h3><pre>void sig_poller_wake(sig_poller * p)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>p</code></td><td><code>sig_poller *</code></td></tr></tbody></table><p class="doc">Makes a current or the next sig_poller_wait() return early. Safe from any
+thread; wakes coalesce.</p></section>
+</body></html>

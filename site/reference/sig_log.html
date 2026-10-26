@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sig_log.h - libsig reference</title><style>:root{color-scheme:light dark;--bg:#fff;--fg:#1b1f24;--mut:#59636e;--bd:#d0d7de;--code:#f6f8fa;--note:#fff8c5;--lnk:#0969da}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--mut:#9198a1;--bd:#30363d;--code:#161b22;--note:#3b2e00;--lnk:#58a6ff}}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;margin:0 auto;max-width:56rem;padding:1rem 16px 3rem}
+a{color:var(--lnk)}code,pre{font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+pre{background:var(--code);padding:.6rem .8rem;overflow-x:auto;border-radius:6px}
+.note{background:var(--note);border-left:4px solid var(--bd);padding:.5rem .8rem;margin:1rem 0;white-space:pre-wrap}
+.item{border-top:1px solid var(--bd);margin-top:1.5rem;padding-top:.5rem}
+.doc{white-space:pre-wrap;color:var(--fg)}table{border-collapse:collapse}th,td{border:1px solid var(--bd);padding:.25rem .6rem;text-align:left}
+nav{color:var(--mut)}.shared{color:var(--mut);font-size:.9em;margin:.4rem 0 0}</style></head>
+<body>
+<nav><a href="index.html">Reference index</a> / foundation / <a href="/sig-docs/">Architecture site</a></nav>
+<h1>sig_log.h</h1>
+<p><code>include/sig/base/sig_log.h</code></p>
+<section class="item" id="sig_log_level_t"><h3>sig_log_level_t</h3><pre>typedef enum {
+    SIG_LOG_TRACE = 0,
+    SIG_LOG_DEBUG,
+    SIG_LOG_INFO,
+    SIG_LOG_WARN,
+    SIG_LOG_ERROR,
+    SIG_LOG_FATAL,
+} sig_log_level_t;</pre></section>
+<section class="item" id="sig_log_init"><h3>sig_log_init</h3><pre>sig_status_t sig_log_init(FILE * fp, sig_log_level_t level)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>fp</code></td><td><code>FILE *</code></td></tr><tr><td><code>level</code></td><td><code>sig_log_level_t</code></td></tr></tbody></table><p class="doc">fp may be NULL to disable output while still tracking level.
+PRECONDITION: sig_log_init must be called before spawning any thread that will log,
+and sig_log_shutdown must only be called after every logging thread has been joined.
+Concurrent init/shutdown with logging threads results in undefined behavior.</p></section>
+<section class="item" id="sig_log_shutdown"><h3>sig_log_shutdown</h3><pre>void sig_log_shutdown()</pre><p class="shared">shared with <a href="#sig_log_init">sig_log_init</a></p><p class="doc">fp may be NULL to disable output while still tracking level.
+PRECONDITION: sig_log_init must be called before spawning any thread that will log,
+and sig_log_shutdown must only be called after every logging thread has been joined.
+Concurrent init/shutdown with logging threads results in undefined behavior.</p></section>
+<section class="item" id="sig_log_level_from_string"><h3>sig_log_level_from_string</h3><pre>sig_status_t sig_log_level_from_string(const char * name, sig_log_level_t * out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>out</code></td><td><code>sig_log_level_t *</code></td></tr></tbody></table><p class="doc">Parses a level name (&quot;trace&quot; .. &quot;fatal&quot;, case-insensitive) into *out.
+Returns SIG_ERR_INVALID_ARG (leaving *out untouched) for NULL or an unknown name.</p></section>
+<section class="item" id="sig_log_write"><h3>sig_log_write</h3><pre>void sig_log_write(sig_log_level_t level, const char * file, int line, const char * fmt, ...)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>level</code></td><td><code>sig_log_level_t</code></td></tr><tr><td><code>file</code></td><td><code>const char *</code></td></tr><tr><td><code>line</code></td><td><code>int</code></td></tr><tr><td><code>fmt</code></td><td><code>const char *</code></td></tr><tr><td><code></code></td><td><code>...</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_log_level_from_string">sig_log_level_from_string</a></p><p class="doc">Parses a level name (&quot;trace&quot; .. &quot;fatal&quot;, case-insensitive) into *out.
+Returns SIG_ERR_INVALID_ARG (leaving *out untouched) for NULL or an unknown name.</p></section>
+<section class="item" id="macro-sig_log_trace"><h3>sig_log_trace</h3><pre>#define sig_log_trace(...) sig_log_write(SIG_LOG_TRACE, __FILE__, __LINE__, __VA_ARGS__)</pre></section>
+<section class="item" id="macro-sig_log_debug"><h3>sig_log_debug</h3><pre>#define sig_log_debug(...) sig_log_write(SIG_LOG_DEBUG, __FILE__, __LINE__, __VA_ARGS__)</pre></section>
+<section class="item" id="macro-sig_log_info"><h3>sig_log_info</h3><pre>#define sig_log_info(...)  sig_log_write(SIG_LOG_INFO, __FILE__, __LINE__, __VA_ARGS__)</pre></section>
+<section class="item" id="macro-sig_log_warn"><h3>sig_log_warn</h3><pre>#define sig_log_warn(...)  sig_log_write(SIG_LOG_WARN, __FILE__, __LINE__, __VA_ARGS__)</pre></section>
+<section class="item" id="macro-sig_log_error"><h3>sig_log_error</h3><pre>#define sig_log_error(...) sig_log_write(SIG_LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__)</pre></section>
+<section class="item" id="macro-sig_log_fatal"><h3>sig_log_fatal</h3><pre>#define sig_log_fatal(...) sig_log_write(SIG_LOG_FATAL, __FILE__, __LINE__, __VA_ARGS__)</pre></section>
+</body></html>

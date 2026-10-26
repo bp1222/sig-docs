@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sig_ws.h - libsig reference</title><style>:root{color-scheme:light dark;--bg:#fff;--fg:#1b1f24;--mut:#59636e;--bd:#d0d7de;--code:#f6f8fa;--note:#fff8c5;--lnk:#0969da}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--mut:#9198a1;--bd:#30363d;--code:#161b22;--note:#3b2e00;--lnk:#58a6ff}}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;margin:0 auto;max-width:56rem;padding:1rem 16px 3rem}
+a{color:var(--lnk)}code,pre{font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+pre{background:var(--code);padding:.6rem .8rem;overflow-x:auto;border-radius:6px}
+.note{background:var(--note);border-left:4px solid var(--bd);padding:.5rem .8rem;margin:1rem 0;white-space:pre-wrap}
+.item{border-top:1px solid var(--bd);margin-top:1.5rem;padding-top:.5rem}
+.doc{white-space:pre-wrap;color:var(--fg)}table{border-collapse:collapse}th,td{border:1px solid var(--bd);padding:.25rem .6rem;text-align:left}
+nav{color:var(--mut)}.shared{color:var(--mut);font-size:.9em;margin:.4rem 0 0}</style></head>
+<body>
+<nav><a href="index.html">Reference index</a> / http / <a href="/sig-docs/">Architecture site</a></nav>
+<h1>sig_ws.h</h1>
+<p><code>include/sig/http/sig_ws.h</code></p>
+<div class="note">WebSocket (RFC 6455) handshake and framing primitives. Pure functions: no
+sockets, no I/O. Only unfragmented text and control frames are supported.</div>
+<section class="item" id="sig_ws_opcode"><h3>sig_ws_opcode</h3><pre>typedef enum { SIG_WS_TEXT = 1, SIG_WS_CLOSE = 8, SIG_WS_PING = 9, SIG_WS_PONG = 10 } sig_ws_opcode;</pre></section>
+<section class="item" id="sig_ws_accept_key"><h3>sig_ws_accept_key</h3><pre>sig_status_t sig_ws_accept_key(const char * client_key, char [29] out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>client_key</code></td><td><code>const char *</code></td></tr><tr><td><code>out</code></td><td><code>char [29]</code></td></tr></tbody></table><p class="doc">Computes the Sec-WebSocket-Accept value for `client_key` (the client's
+Sec-WebSocket-Key, NUL-terminated) into `out` as a NUL-terminated string.
+SIG_ERR_INVALID_ARG on a NULL argument.</p></section>
+<section class="item" id="sig_ws_encode"><h3>sig_ws_encode</h3><pre>sig_status_t sig_ws_encode(sig_ws_opcode op, const void * payload, size_t len, char ** out, size_t * out_len)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>op</code></td><td><code>sig_ws_opcode</code></td></tr><tr><td><code>payload</code></td><td><code>const void *</code></td></tr><tr><td><code>len</code></td><td><code>size_t</code></td></tr><tr><td><code>out</code></td><td><code>char **</code></td></tr><tr><td><code>out_len</code></td><td><code>size_t *</code></td></tr></tbody></table><p class="doc">Encodes one unmasked, unfragmented server frame. *out is sig_alloc'd (free
+with sig_free) and holds *out_len bytes. `payload` may be NULL when len is 0.</p></section>
+<section class="item" id="sig_ws_decode_result"><h3>sig_ws_decode_result</h3><pre>typedef enum {
+    SIG_WS_FRAME,          /* one complete frame decoded into *out */
+    SIG_WS_INCOMPLETE,     /* need more bytes */
+    SIG_WS_PROTOCOL_ERROR, /* unmasked client frame, reserved bits, unknown opcode,
+                              fragmented (FIN clear or opcode 0), or control frame &gt; 125 bytes */
+    SIG_WS_TOO_LARGE       /* payload exceeds max_payload */
+} sig_ws_decode_result;</pre></section>
+<section class="item" id="sig_ws_frame"><h3>sig_ws_frame</h3><pre>typedef struct {
+    sig_ws_opcode op;
+    unsigned char *payload; /* points into the caller's buffer, unmasked in place */
+    size_t len;
+    size_t consumed; /* bytes of the buffer this frame occupied; advance by this */
+} sig_ws_frame;</pre></section>
+<section class="item" id="sig_ws_decode"><h3>sig_ws_decode</h3><pre>sig_ws_decode_result sig_ws_decode(unsigned char * buf, size_t len, size_t max_payload, sig_ws_frame * out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>buf</code></td><td><code>unsigned char *</code></td></tr><tr><td><code>len</code></td><td><code>size_t</code></td></tr><tr><td><code>max_payload</code></td><td><code>size_t</code></td></tr><tr><td><code>out</code></td><td><code>sig_ws_frame *</code></td></tr></tbody></table><p class="doc">Decodes one masked client frame from the start of buf[0..len). Unmasks the
+payload in place. *out is only valid for SIG_WS_FRAME.</p></section>
+</body></html>

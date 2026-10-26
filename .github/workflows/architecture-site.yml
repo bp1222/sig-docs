@@ -1,69 +1,24 @@
 name: architecture-site
 
-# Builds the LikeC4 architecture site and, on master, publishes it to GitHub
-# Pages. Pages must be enabled once: Settings -> Pages -> Source: GitHub Actions.
-#
-# The generator reads the public headers of bp1222/sig, which is checked out
-# next to this repo. If bp1222/sig is private, add a read-only token for it as
-# the SIG_READ_TOKEN secret. To rebuild when the headers change, have bp1222/sig
-# send a repository_dispatch event of type sig-updated to this repo.
+# Publishes the prebuilt site/ directory to GitHub Pages. The site is built in
+# bp1222/sig and committed here; nothing is built in this repository.
+# Pages must be enabled once: Settings -> Pages -> Source: GitHub Actions.
 
 on:
-  pull_request:
   push:
     branches: [master]
+    paths: ['site/**', '.github/workflows/architecture-site.yml']
   workflow_dispatch:
-  repository_dispatch:
-    types: [sig-updated]
 
 permissions:
   contents: read
 
 concurrency:
-  group: architecture-site-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
-env:
-  SIG_ROOT: ${{ github.workspace }}/sig-src
+  group: architecture-site
+  cancel-in-progress: false
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/checkout@v7
-        with:
-          repository: bp1222/sig
-          path: sig-src
-          token: ${{ secrets.SIG_READ_TOKEN || github.token }}
-
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 12.6.0
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: lts/*
-          cache: pnpm
-
-      - name: sigdoc tests
-        run: node --test tools/sigdoc/test/
-
-      - name: Install
-        run: pnpm install --frozen-lockfile
-
-      - name: Build site
-        run: pnpm build
-
-      - uses: actions/upload-pages-artifact@v5
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
-        with:
-          path: dist
-
   deploy:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
-    needs: build
     runs-on: ubuntu-latest
     permissions:
       pages: write
@@ -72,5 +27,9 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v7
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
       - id: deployment
         uses: actions/deploy-pages@v5

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sig_thread.h - libsig reference</title><style>:root{color-scheme:light dark;--bg:#fff;--fg:#1b1f24;--mut:#59636e;--bd:#d0d7de;--code:#f6f8fa;--note:#fff8c5;--lnk:#0969da}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--mut:#9198a1;--bd:#30363d;--code:#161b22;--note:#3b2e00;--lnk:#58a6ff}}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;margin:0 auto;max-width:56rem;padding:1rem 16px 3rem}
+a{color:var(--lnk)}code,pre{font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+pre{background:var(--code);padding:.6rem .8rem;overflow-x:auto;border-radius:6px}
+.note{background:var(--note);border-left:4px solid var(--bd);padding:.5rem .8rem;margin:1rem 0;white-space:pre-wrap}
+.item{border-top:1px solid var(--bd);margin-top:1.5rem;padding-top:.5rem}
+.doc{white-space:pre-wrap;color:var(--fg)}table{border-collapse:collapse}th,td{border:1px solid var(--bd);padding:.25rem .6rem;text-align:left}
+nav{color:var(--mut)}.shared{color:var(--mut);font-size:.9em;margin:.4rem 0 0}</style></head>
+<body>
+<nav><a href="index.html">Reference index</a> / platform / <a href="/sig-docs/">Architecture site</a></nav>
+<h1>sig_thread.h</h1>
+<p><code>include/sig/platform/sig_thread.h</code></p>
+<section class="item" id="sig_mutex"><h3>sig_mutex</h3><pre>typedef union {
+    void *sig_align;
+    unsigned char sig_opaque[64];
+} sig_mutex;</pre><p class="doc">Opaque buffers sized to hold the largest common pthread backing
+type with headroom; sig_thread_posix.c static_asserts this at
+compile time so a mismatch fails the build, not silently corrupts
+memory.</p></section>
+<section class="item" id="sig_mutex_attr"><h3>sig_mutex_attr</h3><pre>typedef union {
+    void *sig_align;
+    unsigned char sig_opaque[16];
+} sig_mutex_attr;</pre><p class="shared">shared with <a href="#sig_mutex">sig_mutex</a></p><p class="doc">Opaque buffers sized to hold the largest common pthread backing
+type with headroom; sig_thread_posix.c static_asserts this at
+compile time so a mismatch fails the build, not silently corrupts
+memory.</p></section>
+<section class="item" id="sig_condition"><h3>sig_condition</h3><pre>typedef union {
+    void *sig_align;
+    unsigned char sig_opaque[64];
+} sig_condition;</pre><p class="shared">shared with <a href="#sig_mutex">sig_mutex</a></p><p class="doc">Opaque buffers sized to hold the largest common pthread backing
+type with headroom; sig_thread_posix.c static_asserts this at
+compile time so a mismatch fails the build, not silently corrupts
+memory.</p></section>
+<section class="item" id="sig_rwlock"><h3>sig_rwlock</h3><pre>typedef struct {
+    sig_mutex mtx;
+    sig_condition cond;
+    int readers;
+    int writer_active;
+    int writers_waiting;
+} sig_rwlock;</pre><p class="doc">Reader/writer lock built from sig_mutex + sig_condition so any port
+that provides those two gets it. Many readers or one writer; a
+waiting writer blocks new readers, so writers are not starved. Not
+recursive.</p></section>
+<section class="item" id="sig_tls_key"><h3>sig_tls_key</h3><pre>typedef union {
+    void *sig_align;
+    unsigned char sig_opaque[16];
+} sig_tls_key;</pre><p class="shared">shared with <a href="#sig_rwlock">sig_rwlock</a></p><p class="doc">Reader/writer lock built from sig_mutex + sig_condition so any port
+that provides those two gets it. Many readers or one writer; a
+waiting writer blocks new readers, so writers are not starved. Not
+recursive.</p></section>
+<section class="item" id="sig_thread"><h3>sig_thread</h3><pre>typedef union {
+    void *sig_align;
+    unsigned char sig_opaque[16];
+} sig_thread;</pre><p class="shared">shared with <a href="#sig_rwlock">sig_rwlock</a></p><p class="doc">Reader/writer lock built from sig_mutex + sig_condition so any port
+that provides those two gets it. Many readers or one writer; a
+waiting writer blocks new readers, so writers are not starved. Not
+recursive.</p></section>
+<section class="item" id="sig_thread_start_fn"><h3>sig_thread_start_fn</h3><pre>typedef void *(*sig_thread_start_fn)(void *arg);</pre></section>
+<section class="item" id="sig_mutex_attr_init"><h3>sig_mutex_attr_init</h3><pre>sig_status_t sig_mutex_attr_init(sig_mutex_attr * attr)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>attr</code></td><td><code>sig_mutex_attr *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_mutex_attr_destroy"><h3>sig_mutex_attr_destroy</h3><pre>sig_status_t sig_mutex_attr_destroy(sig_mutex_attr * attr)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>attr</code></td><td><code>sig_mutex_attr *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_mutex_init"><h3>sig_mutex_init</h3><pre>sig_status_t sig_mutex_init(sig_mutex * mtx, sig_mutex_attr * attr)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>mtx</code></td><td><code>sig_mutex *</code></td></tr><tr><td><code>attr</code></td><td><code>sig_mutex_attr *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_mutex_destroy"><h3>sig_mutex_destroy</h3><pre>sig_status_t sig_mutex_destroy(sig_mutex * mtx)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>mtx</code></td><td><code>sig_mutex *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_mutex_lock"><h3>sig_mutex_lock</h3><pre>sig_status_t sig_mutex_lock(sig_mutex * mtx)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>mtx</code></td><td><code>sig_mutex *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_mutex_unlock"><h3>sig_mutex_unlock</h3><pre>sig_status_t sig_mutex_unlock(sig_mutex * mtx)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>mtx</code></td><td><code>sig_mutex *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_condition_init"><h3>sig_condition_init</h3><pre>sig_status_t sig_condition_init(sig_condition * cond)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>cond</code></td><td><code>sig_condition *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_condition_destroy"><h3>sig_condition_destroy</h3><pre>sig_status_t sig_condition_destroy(sig_condition * cond)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>cond</code></td><td><code>sig_condition *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_condition_wait"><h3>sig_condition_wait</h3><pre>sig_status_t sig_condition_wait(sig_condition * cond, sig_mutex * mtx)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>cond</code></td><td><code>sig_condition *</code></td></tr><tr><td><code>mtx</code></td><td><code>sig_mutex *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_condition_notify"><h3>sig_condition_notify</h3><pre>sig_status_t sig_condition_notify(sig_condition * cond)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>cond</code></td><td><code>sig_condition *</code></td></tr></tbody></table><p class="doc">Wakes ALL waiters (broadcast semantics on every platform): the rwlock
+relies on it, and a port must not weaken it to wake a single waiter.</p></section>
+<section class="item" id="sig_condition_timedwait"><h3>sig_condition_timedwait</h3><pre>sig_status_t sig_condition_timedwait(sig_condition * cond, sig_mutex * mtx, const struct timespec * abstime)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>cond</code></td><td><code>sig_condition *</code></td></tr><tr><td><code>mtx</code></td><td><code>sig_mutex *</code></td></tr><tr><td><code>abstime</code></td><td><code>const struct timespec *</code></td></tr></tbody></table><p class="doc">Waits on cond until either notified or *abstime (an absolute
+CLOCK_MONOTONIC deadline, e.g. from sig_time_now() plus an offset)
+is reached. Returns SIG_OK on either a real notify or a timeout --
+callers distinguish &quot;did my condition become true&quot; by re-checking
+their own state after the call returns, exactly as with
+sig_condition_wait(). Returns SIG_ERR_PLATFORM only on a genuine
+underlying error.</p></section>
+<section class="item" id="sig_rwlock_init"><h3>sig_rwlock_init</h3><pre>sig_status_t sig_rwlock_init(sig_rwlock * l)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>l</code></td><td><code>sig_rwlock *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_rwlock_destroy"><h3>sig_rwlock_destroy</h3><pre>sig_status_t sig_rwlock_destroy(sig_rwlock * l)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>l</code></td><td><code>sig_rwlock *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_rwlock_rdlock"><h3>sig_rwlock_rdlock</h3><pre>sig_status_t sig_rwlock_rdlock(sig_rwlock * l)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>l</code></td><td><code>sig_rwlock *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_rwlock_wrlock"><h3>sig_rwlock_wrlock</h3><pre>sig_status_t sig_rwlock_wrlock(sig_rwlock * l)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>l</code></td><td><code>sig_rwlock *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_rwlock_unlock"><h3>sig_rwlock_unlock</h3><pre>sig_status_t sig_rwlock_unlock(sig_rwlock * l)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>l</code></td><td><code>sig_rwlock *</code></td></tr></tbody></table><p class="doc">Releases whichever mode the calling thread holds.</p></section>
+<section class="item" id="sig_tls_key_create"><h3>sig_tls_key_create</h3><pre>sig_status_t sig_tls_key_create(sig_tls_key * key)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>key</code></td><td><code>sig_tls_key *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_tls_key_delete"><h3>sig_tls_key_delete</h3><pre>sig_status_t sig_tls_key_delete(sig_tls_key * key)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>key</code></td><td><code>sig_tls_key *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_tls_get"><h3>sig_tls_get</h3><pre>sig_status_t sig_tls_get(sig_tls_key key, void ** out_value)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>key</code></td><td><code>sig_tls_key</code></td></tr><tr><td><code>out_value</code></td><td><code>void **</code></td></tr></tbody></table></section>
+<section class="item" id="sig_tls_set"><h3>sig_tls_set</h3><pre>sig_status_t sig_tls_set(sig_tls_key key, void * value)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>key</code></td><td><code>sig_tls_key</code></td></tr><tr><td><code>value</code></td><td><code>void *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_thread_create"><h3>sig_thread_create</h3><pre>sig_status_t sig_thread_create(sig_thread * thread, sig_thread_start_fn start, void * arg)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>thread</code></td><td><code>sig_thread *</code></td></tr><tr><td><code>start</code></td><td><code>sig_thread_start_fn</code></td></tr><tr><td><code>arg</code></td><td><code>void *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_thread_join"><h3>sig_thread_join</h3><pre>sig_status_t sig_thread_join(sig_thread * thread, void ** out_ret)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>thread</code></td><td><code>sig_thread *</code></td></tr><tr><td><code>out_ret</code></td><td><code>void **</code></td></tr></tbody></table></section>
+</body></html>

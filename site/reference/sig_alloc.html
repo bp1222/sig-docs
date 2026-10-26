@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sig_alloc.h - libsig reference</title><style>:root{color-scheme:light dark;--bg:#fff;--fg:#1b1f24;--mut:#59636e;--bd:#d0d7de;--code:#f6f8fa;--note:#fff8c5;--lnk:#0969da}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--mut:#9198a1;--bd:#30363d;--code:#161b22;--note:#3b2e00;--lnk:#58a6ff}}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;margin:0 auto;max-width:56rem;padding:1rem 16px 3rem}
+a{color:var(--lnk)}code,pre{font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+pre{background:var(--code);padding:.6rem .8rem;overflow-x:auto;border-radius:6px}
+.note{background:var(--note);border-left:4px solid var(--bd);padding:.5rem .8rem;margin:1rem 0;white-space:pre-wrap}
+.item{border-top:1px solid var(--bd);margin-top:1.5rem;padding-top:.5rem}
+.doc{white-space:pre-wrap;color:var(--fg)}table{border-collapse:collapse}th,td{border:1px solid var(--bd);padding:.25rem .6rem;text-align:left}
+nav{color:var(--mut)}.shared{color:var(--mut);font-size:.9em;margin:.4rem 0 0}</style></head>
+<body>
+<nav><a href="index.html">Reference index</a> / foundation / <a href="/sig-docs/">Architecture site</a></nav>
+<h1>sig_alloc.h</h1>
+<p><code>include/sig/base/sig_alloc.h</code></p>
+<section class="item" id="sig_allocator_t"><h3>sig_allocator_t</h3><pre>typedef struct {
+    void *(*alloc)(size_t size);
+    void *(*calloc)(size_t count, size_t size);
+    void *(*realloc)(void *ptr, size_t size);
+    void (*free)(void *ptr);
+} sig_allocator_t;</pre></section>
+<section class="item" id="sig_alloc_init"><h3>sig_alloc_init</h3><pre>void sig_alloc_init()</pre><p class="doc">Sets up the default allocator (libc pass-through, or the cmocka
+test allocator when built with SIG_TEST). Call once before any
+other sig_alloc_* function.</p></section>
+<section class="item" id="sig_alloc_shutdown"><h3>sig_alloc_shutdown</h3><pre>void sig_alloc_shutdown()</pre><p class="shared">shared with <a href="#sig_alloc_init">sig_alloc_init</a></p><p class="doc">Sets up the default allocator (libc pass-through, or the cmocka
+test allocator when built with SIG_TEST). Call once before any
+other sig_alloc_* function.</p></section>
+<section class="item" id="sig_alloc_set_allocator"><h3>sig_alloc_set_allocator</h3><pre>void sig_alloc_set_allocator(const sig_allocator_t * allocator)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>allocator</code></td><td><code>const sig_allocator_t *</code></td></tr></tbody></table><p class="doc">Overrides the active allocator. Passing NULL restores the default
+chosen by sig_alloc_init(). Any function pointer in `allocator` may
+be NULL if that operation is not needed by the caller of this
+override (e.g. a test that only exercises sig_alloc()): a NULL
+pointer for any operation falls back to the libc implementation for
+that operation only, so sig_calloc/sig_realloc/sig_free (and their
+SIG_DEBUG counterparts) never dereference a NULL function pointer
+even if the override only sets `alloc`.</p></section>
+<section class="item" id="_sig_alloc_debug"><h3>_sig_alloc_debug</h3><pre>void * _sig_alloc_debug(size_t size, const char * file, int line)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>size</code></td><td><code>size_t</code></td></tr><tr><td><code>file</code></td><td><code>const char *</code></td></tr><tr><td><code>line</code></td><td><code>int</code></td></tr></tbody></table></section>
+<section class="item" id="_sig_calloc_debug"><h3>_sig_calloc_debug</h3><pre>void * _sig_calloc_debug(size_t count, size_t size, const char * file, int line)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>count</code></td><td><code>size_t</code></td></tr><tr><td><code>size</code></td><td><code>size_t</code></td></tr><tr><td><code>file</code></td><td><code>const char *</code></td></tr><tr><td><code>line</code></td><td><code>int</code></td></tr></tbody></table></section>
+<section class="item" id="_sig_realloc_debug"><h3>_sig_realloc_debug</h3><pre>void * _sig_realloc_debug(void * ptr, size_t size, const char * file, int line)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>ptr</code></td><td><code>void *</code></td></tr><tr><td><code>size</code></td><td><code>size_t</code></td></tr><tr><td><code>file</code></td><td><code>const char *</code></td></tr><tr><td><code>line</code></td><td><code>int</code></td></tr></tbody></table></section>
+<section class="item" id="_sig_free_debug"><h3>_sig_free_debug</h3><pre>void _sig_free_debug(void * ptr, const char * file, int line)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>ptr</code></td><td><code>void *</code></td></tr><tr><td><code>file</code></td><td><code>const char *</code></td></tr><tr><td><code>line</code></td><td><code>int</code></td></tr></tbody></table></section>
+<section class="item" id="macro-sig_alloc"><h3>sig_alloc</h3><pre>#define sig_alloc(size)         _sig_alloc_debug((size), __FILE__, __LINE__)</pre></section>
+<section class="item" id="macro-sig_calloc"><h3>sig_calloc</h3><pre>#define sig_calloc(count, size) _sig_calloc_debug((count), (size), __FILE__, __LINE__)</pre></section>
+<section class="item" id="macro-sig_realloc"><h3>sig_realloc</h3><pre>#define sig_realloc(ptr, size)  _sig_realloc_debug((ptr), (size), __FILE__, __LINE__)</pre></section>
+<section class="item" id="macro-sig_free"><h3>sig_free</h3><pre>#define sig_free(ptr)           _sig_free_debug((ptr), __FILE__, __LINE__)</pre></section>
+<section class="item" id="sig_alloc"><h3>sig_alloc</h3><pre>void * sig_alloc(size_t size)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>size</code></td><td><code>size_t</code></td></tr></tbody></table></section>
+<section class="item" id="sig_calloc"><h3>sig_calloc</h3><pre>void * sig_calloc(size_t count, size_t size)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>count</code></td><td><code>size_t</code></td></tr><tr><td><code>size</code></td><td><code>size_t</code></td></tr></tbody></table></section>
+<section class="item" id="sig_realloc"><h3>sig_realloc</h3><pre>void * sig_realloc(void * ptr, size_t size)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>ptr</code></td><td><code>void *</code></td></tr><tr><td><code>size</code></td><td><code>size_t</code></td></tr></tbody></table></section>
+<section class="item" id="sig_free"><h3>sig_free</h3><pre>void sig_free(void * ptr)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>ptr</code></td><td><code>void *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_alloc_stats"><h3>sig_alloc_stats</h3><pre>typedef struct {
+    uint64_t allocs;
+    uint64_t frees;
+    uint64_t reallocs;
+    uint64_t bytes_requested; /* cumulative, never decreases */
+    uint64_t live_blocks;     /* allocs - frees */
+    bool live_bytes_tracked;
+    uint64_t live_bytes; /* 0 unless live_bytes_tracked */
+} sig_alloc_stats;</pre><p class="doc">Allocation counters, maintained (atomically) in every build. Counts
+only successful calls: sig_realloc(NULL, n) is an alloc, a realloc of
+an existing block is a realloc (the live block count is unchanged),
+and sig_free(NULL) is ignored. Counters restart at sig_alloc_init().
+live_bytes needs per-block size tracking, which only a SIG_DEBUG build
+has: live_bytes_tracked says whether live_bytes is meaningful.</p></section>
+<section class="item" id="sig_alloc_get_stats"><h3>sig_alloc_get_stats</h3><pre>void sig_alloc_get_stats(sig_alloc_stats * out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>out</code></td><td><code>sig_alloc_stats *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_alloc_dump_sites"><h3>sig_alloc_dump_sites</h3><pre>void sig_alloc_dump_sites(FILE * out, size_t top_n)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>out</code></td><td><code>FILE *</code></td></tr><tr><td><code>top_n</code></td><td><code>size_t</code></td></tr></tbody></table><p class="doc">Writes the `top_n` allocation sites (file:line) holding the most live
+bytes, one per line, to `out`.</p></section>
+<section class="item" id="sig_strdup"><h3>sig_strdup</h3><pre>sig_status_t sig_strdup(const char * s, char ** out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>s</code></td><td><code>const char *</code></td></tr><tr><td><code>out</code></td><td><code>char **</code></td></tr></tbody></table></section>
+</body></html>

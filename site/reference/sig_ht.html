@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sig_ht.h - libsig reference</title><style>:root{color-scheme:light dark;--bg:#fff;--fg:#1b1f24;--mut:#59636e;--bd:#d0d7de;--code:#f6f8fa;--note:#fff8c5;--lnk:#0969da}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--mut:#9198a1;--bd:#30363d;--code:#161b22;--note:#3b2e00;--lnk:#58a6ff}}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;margin:0 auto;max-width:56rem;padding:1rem 16px 3rem}
+a{color:var(--lnk)}code,pre{font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+pre{background:var(--code);padding:.6rem .8rem;overflow-x:auto;border-radius:6px}
+.note{background:var(--note);border-left:4px solid var(--bd);padding:.5rem .8rem;margin:1rem 0;white-space:pre-wrap}
+.item{border-top:1px solid var(--bd);margin-top:1.5rem;padding-top:.5rem}
+.doc{white-space:pre-wrap;color:var(--fg)}table{border-collapse:collapse}th,td{border:1px solid var(--bd);padding:.25rem .6rem;text-align:left}
+nav{color:var(--mut)}.shared{color:var(--mut);font-size:.9em;margin:.4rem 0 0}</style></head>
+<body>
+<nav><a href="index.html">Reference index</a> / foundation / <a href="/sig-docs/">Architecture site</a></nav>
+<h1>sig_ht.h</h1>
+<p><code>include/sig/base/sig_ht.h</code></p>
+<section class="item" id="macro-SIG_HT_MIN_SIZE"><h3>SIG_HT_MIN_SIZE</h3><pre>#define SIG_HT_MIN_SIZE 8</pre></section>
+<section class="item" id="sig_dtor_fn"><h3>sig_dtor_fn</h3><pre>typedef void (*sig_dtor_fn)(void *value);</pre><p class="doc">sig_ht is NOT internally synchronized. The refcount (sig_ht_ref /
+sig_ht_destroy) only arbitrates which caller is responsible for
+tearing the table down when it's shared by pointer; it does not
+make concurrent sig_ht_add/update/get/remove/walk calls from
+multiple threads safe. A table touched from more than one thread
+must be protected by a mutex (e.g. sig_mutex from sig_thread.h)
+owned by the caller.</p></section>
+<section class="item" id="sig_ht_elem"><h3>sig_ht_elem</h3><pre>typedef struct sig_ht_elem sig_ht_elem;</pre></section>
+<section class="item" id="sig_ht_elem-2"><h3>sig_ht_elem</h3><pre>struct sig_ht_elem {
+    sig_ht_elem *next;
+    char *key;
+    void *value;
+};</pre></section>
+<section class="item" id="sig_ht"><h3>sig_ht</h3><pre>typedef struct {
+    sig_refcount_h refcount;
+    uint32_t num_elements;
+    uint32_t num_buckets;
+    sig_ht_elem **buckets;
+    sig_dtor_fn dtor;
+} sig_ht;</pre></section>
+<section class="item" id="sig_ht_create"><h3>sig_ht_create</h3><pre>sig_status_t sig_ht_create(sig_ht ** out_ht, uint32_t initial_buckets, sig_dtor_fn dtor)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>out_ht</code></td><td><code>sig_ht **</code></td></tr><tr><td><code>initial_buckets</code></td><td><code>uint32_t</code></td></tr><tr><td><code>dtor</code></td><td><code>sig_dtor_fn</code></td></tr></tbody></table><p class="doc">dtor may be NULL if stored values are not owned by the hashtable.</p></section>
+<section class="item" id="sig_ht_ref"><h3>sig_ht_ref</h3><pre>void sig_ht_ref(sig_ht * ht)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>ht</code></td><td><code>sig_ht *</code></td></tr></tbody></table><p class="doc">Adds a reference to the hashtable's refcount (sig_refcount_h). Each
+call to sig_ht_ref() must be matched by an additional call to
+sig_ht_destroy() before the hashtable is actually freed.</p></section>
+<section class="item" id="sig_ht_destroy"><h3>sig_ht_destroy</h3><pre>void sig_ht_destroy(sig_ht * ht)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>ht</code></td><td><code>sig_ht *</code></td></tr></tbody></table><p class="doc">Releases a reference to the hashtable. sig_ht_create() starts the
+refcount at 1, so a container that is never shared via sig_ht_ref()
+is fully torn down (elements destroyed via dtor, buckets and the
+struct freed) on the first call, exactly as before. If other
+references remain, this call only decrements the count and returns
+without freeing or destroying anything.</p></section>
+<section class="item" id="sig_ht_add"><h3>sig_ht_add</h3><pre>sig_status_t sig_ht_add(sig_ht * ht, const char * key, void * value)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>ht</code></td><td><code>sig_ht *</code></td></tr><tr><td><code>key</code></td><td><code>const char *</code></td></tr><tr><td><code>value</code></td><td><code>void *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_ht_update"><h3>sig_ht_update</h3><pre>sig_status_t sig_ht_update(sig_ht * ht, const char * key, void * value)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>ht</code></td><td><code>sig_ht *</code></td></tr><tr><td><code>key</code></td><td><code>const char *</code></td></tr><tr><td><code>value</code></td><td><code>void *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_ht_get"><h3>sig_ht_get</h3><pre>sig_status_t sig_ht_get(sig_ht * ht, const char * key, void ** out_value)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>ht</code></td><td><code>sig_ht *</code></td></tr><tr><td><code>key</code></td><td><code>const char *</code></td></tr><tr><td><code>out_value</code></td><td><code>void **</code></td></tr></tbody></table></section>
+<section class="item" id="sig_ht_remove"><h3>sig_ht_remove</h3><pre>sig_status_t sig_ht_remove(sig_ht * ht, const char * key)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>ht</code></td><td><code>sig_ht *</code></td></tr><tr><td><code>key</code></td><td><code>const char *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_ht_count"><h3>sig_ht_count</h3><pre>uint32_t sig_ht_count(const sig_ht * ht)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>ht</code></td><td><code>const sig_ht *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_ht_walk_fn"><h3>sig_ht_walk_fn</h3><pre>typedef sig_status_t (*sig_ht_walk_fn)(const char *key, void *value, void *ctx);</pre></section>
+<section class="item" id="sig_ht_walk"><h3>sig_ht_walk</h3><pre>sig_status_t sig_ht_walk(sig_ht * ht, sig_ht_walk_fn func, void * ctx)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>ht</code></td><td><code>sig_ht *</code></td></tr><tr><td><code>func</code></td><td><code>sig_ht_walk_fn</code></td></tr><tr><td><code>ctx</code></td><td><code>void *</code></td></tr></tbody></table></section>
+</body></html>

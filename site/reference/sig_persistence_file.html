@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sig_persistence_file.h - libsig reference</title><style>:root{color-scheme:light dark;--bg:#fff;--fg:#1b1f24;--mut:#59636e;--bd:#d0d7de;--code:#f6f8fa;--note:#fff8c5;--lnk:#0969da}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--mut:#9198a1;--bd:#30363d;--code:#161b22;--note:#3b2e00;--lnk:#58a6ff}}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;margin:0 auto;max-width:56rem;padding:1rem 16px 3rem}
+a{color:var(--lnk)}code,pre{font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+pre{background:var(--code);padding:.6rem .8rem;overflow-x:auto;border-radius:6px}
+.note{background:var(--note);border-left:4px solid var(--bd);padding:.5rem .8rem;margin:1rem 0;white-space:pre-wrap}
+.item{border-top:1px solid var(--bd);margin-top:1.5rem;padding-top:.5rem}
+.doc{white-space:pre-wrap;color:var(--fg)}table{border-collapse:collapse}th,td{border:1px solid var(--bd);padding:.25rem .6rem;text-align:left}
+nav{color:var(--mut)}.shared{color:var(--mut);font-size:.9em;margin:.4rem 0 0}</style></head>
+<body>
+<nav><a href="index.html">Reference index</a> / persistence / <a href="/sig-docs/">Architecture site</a></nav>
+<h1>sig_persistence_file.h</h1>
+<p><code>include/sig/persistence/sig_persistence_file.h</code></p>
+<section class="item" id="sig_persistence_file_module"><h3>sig_persistence_file_module</h3><pre>extern const sig_persistence_module sig_persistence_file_module;</pre><p class="doc">The file backend, registered as &quot;file&quot;. Its config string (passed to
+sig_persistence_create) is the base directory; NULL or &quot;&quot; is
+SIG_ERR_INVALID_ARG. create does not check or create the directory.
+
+A key is stored at &lt;base_dir&gt;/&lt;ns&gt;/&lt;key&gt;.cfg for the namespaces
+&quot;configurations&quot; and &quot;services&quot;, and at &lt;base_dir&gt;/&lt;ns&gt;/&lt;key&gt;.sig for
+any other namespace. A namespace must match [A-Za-z0-9_-]{1,64}. A key
+may be any string of 1 to 128 bytes that contains no '/', no &quot;..&quot; and
+no control character (below 0x20, or 0x7f), so &quot;My Svc&quot; or &quot;v1.2&quot; are
+keys. Anything else is SIG_ERR_INVALID_ARG, before the filesystem is
+touched.
+
+save creates every missing directory along &lt;base_dir&gt;/&lt;ns&gt; (mode 0755),
+the base directory included, and writes atomically: &lt;key&gt;.&lt;ext&gt;.tmp is written, fsync'ed and renamed over the
+final file, so a reader or a crash never sees a half-written file.
+On failure the old content is left in place.
+
+list reports the regular files named &lt;key&gt;.&lt;ext&gt; (a stem that is a
+valid key, the namespace's extension) directly inside the namespace
+directory, extension stripped, sorted (byte order). Temp files, other
+extensions, stems that are not valid keys and subdirectories are
+ignored. A missing namespace directory lists zero keys; any other
+failure to read it is SIG_ERR_PLATFORM.</p></section>
+</body></html>
