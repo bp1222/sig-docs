@@ -1,0 +1,43 @@
+// Shared specification and the single system element. Every other model file
+// adds its area with `extend sig { <area> = module '...' { ... } }`.
+//
+// Sources:
+//   docs/architecture.md        system purpose, concepts, "Layering", "Build targets"
+//
+// Conventions for the area files:
+//   - ids: sig.<area> for the module, sig.<area>.<component> for components;
+//     tools/sigdoc/components.json uses the same dotted ids.
+//   - views: `<area>` (module with its components visible) and
+//     `<area>_components` (the components and their neighbours), titled
+//     '<Area>' and '<Area> components'.
+//   - descriptions state threading rules quoted or paraphrased from the headers.
+specification {
+  element system
+  element module {
+    notation 'Library module'
+  }
+  element component
+
+  // Things outside libsig: the people and programs that use it, and the
+  // resources it uses. Used by context.c4.
+  element actor {
+    style { shape person }
+  }
+  element external {
+    style { shape rectangle }
+  }
+
+  relationship calls
+  relationship owns
+  relationship signals
+}
+
+model {
+  sig = system 'libsig' {
+    description '
+      C11 library for building signal-processing applications out of small
+      units of logic (capsules) that exchange values (signals) along
+      configured connections.
+    '
+  }
+}

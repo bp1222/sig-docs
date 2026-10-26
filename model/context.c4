@@ -1,0 +1,70 @@
+// Context: what is outside libsig and how it reaches the modules. The view id is `index` so that
+// LikeC4 does not add its own Landscape view.
+//
+// Sources (everything below was checked against these):
+//   docs/architecture.md         "System at a glance": UI and curl/scripts reach the HTTP server with REST/JSON; the project store is a
+//                                directory of configurations/*.cfg and services/*.cfg that the project loads and the management API rewrites
+//   ui/README.md                 static React bundle, talks to a running sighost through the management REST API; -o names the origin the UI
+//                                is served from; polls every 10 s (ui/src/state/polling.ts POLL_INTERVAL_MS)
+//   ui/src/feed/FeedClient.ts    new WebSocket(url); ui/src/connection/settings.ts feedUrl is ws://<host>:<port>/feed. The README and
+//                                architecture.md describe only the REST API; the UI also opens the signal-feed WebSocket.
+//   docs/rest-api.md:473-475     curl against the management API
+//   include/sig/persistence/sig_persistence_file.h, src/persistence/sig_persistence_file.c   file backend: fopen/rename/opendir on the directory
+//   src/net/sig_net_posix.c      the only file with socket calls besides sig_http_server.c; sig::net is the TCP layer
+//   src/feed/sig_signal_feed.c   registers the upgrade handler for "/feed" on the HTTP server (feed.c4)
+model {
+  browser = actor 'Browser UI' {
+    technology 'ui/: React and React Flow, static bundle'
+    description '
+      The editor for a running host. It is a client of the management REST
+      API and of the signal feed WebSocket, and holds no state of its own
+      beyond an unsaved draft and a list of recent hosts. It polls the host
+      every 10 seconds. It is served separately, from its own origin, which
+      the host must allow with -o.
+    '
+  }
+
+  cli = actor 'curl and scripts' {
+    description 'Any HTTP client calling the management REST API.'
+  }
+
+  store = external 'Project store' {
+    technology 'directory of configurations/*.cfg and services/*.cfg (file backend)'
+    description '
+      The source of truth for a project. The runtime loads it at start and
+      the edit operations rewrite it.
+    '
+    style { shape storage }
+  }
+
+  network = external 'Network' {
+    technology 'TCP, IPv4'
+    description 'The sockets the HTTP server listens on and its clients connect over.'
+  }
+
+  operator = actor 'Operator' {
+    description 'Whoever starts and stops the sighost process on a machine.'
+  }
+
+  operator -[calls]-> sig.host 'runs sighost with a project directory and options (host/posix/main.c: -p -l -m -o -s -h)'
+  browser -[calls]-> sig.http 'REST/JSON over HTTP'
+  cli -[calls]-> sig.http 'REST/JSON over HTTP'
+  browser -[calls]-> sig.feed 'WebSocket on /feed'
+  sig.persistence -[calls]-> store 'reads at project load; rewrites on edit (temp file, then rename)'
+  sig.platform -[calls]-> network 'sig_net (the optional sig::net target, SIG_NET): listen, accept, read and write'
+}
+
+views {
+  view index {
+    title 'libsig in context'
+    description '
+      Who talks to a running sighost, and what it reads and writes outside
+      the process. The host is the program the operator runs; the other
+      modules shown are the ones that touch the outside. The function
+      reference lives in generated pages: the libsig system links to their
+      index, and every module and component links to its header pages.
+    '
+    include operator, browser, cli, store, network
+    include sig.host, sig.http, sig.feed, sig.persistence, sig.platform
+  }
+}

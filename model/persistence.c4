@@ -1,0 +1,128 @@
+// Persistence: include/sig/persistence/sig_persistence.h, sig_persistence_file.h
+// (src/persistence/sig_persistence.c, sig_persistence_file.c). Both source files are
+// part of the core sig library (CMakeLists.txt: add_library(sig ...)), not an option.
+//
+// Sources (everything below was checked against these):
+//   include/sig/persistence/sig_persistence.h        module struct (name, create, destroy, load, save, remove, list), per-hook contracts,
+//                                                    "A NULL data hook makes the call SIG_ERR_INVALID_ARG", "Hooks block"
+//   include/sig/persistence/sig_persistence_file.h   file layout, name rules, atomic save, list rules
+//   src/persistence/sig_persistence.c:6-65           registry: a sig_ht keyed by module name; register is sig_ht_add (a duplicate name is the
+//                                                    status sig_ht_add returns); lookup is sig_ht_get
+//   src/persistence/sig_persistence.c:67-149         sig_persistence_create calls module->create; load/save/remove/list check arguments and the
+//                                                    hook, forward to it, and (load, save, remove) write a trace log line on success
+//   src/persistence/sig_persistence_file.c:13-14     NS_MAX_LEN 64, KEY_MAX_LEN 128
+//   src/persistence/sig_persistence_file.c:20-41     file_create: NULL or "" config is SIG_ERR_INVALID_ARG; the directory is neither checked nor created
+//   src/persistence/sig_persistence_file.c:52-95     valid_ns [A-Za-z0-9_-]{1,64}; valid_key 1..128 bytes, no '/', no "..", no byte < 0x20 or 0x7f
+//   src/persistence/sig_persistence_file.c:97-125    ext_for: ".cfg" for "configurations" and "services", ".sig" otherwise; path <base>/<ns>/<key><ext>
+//   src/persistence/sig_persistence_file.c:127-143   make_dirs: mkdir -p, mode 0755
+//   src/persistence/sig_persistence_file.c:145-212   file_load: ENOENT is SIG_ERR_NOT_FOUND, other open errors SIG_ERR_PLATFORM; a non-regular file is
+//                                                    SIG_ERR_PLATFORM
+//   src/persistence/sig_persistence_file.c:214-260   file_save: make_dirs, write <key><ext>.tmp, fflush, fsync, fclose, rename over the final path;
+//                                                    on a failed write or rename the tmp file is unlinked and the old file is untouched
+//   src/persistence/sig_persistence_file.c:262-288   file_remove: unlink; ENOENT is SIG_ERR_NOT_FOUND
+//   src/persistence/sig_persistence_file.c:290-426   file_list: collects keys, sorts with qsort/strcmp, closes the directory, then calls fn;
+//                                                    missing directory (ENOENT) lists nothing, other open errors SIG_ERR_PLATFORM
+//   src/project/sig_project.c:139-140,339-450        project uses sig_persistence_load / sig_persistence_list through the "configurations" and "services" namespaces
+//   src/project/sig_project.c:142-171,654-737,1163-1230  save_doc (adds a trailing newline, then sig_persistence_save) and remove_doc (a missing key counts as removed)
+//   src/runtime/sig_runtime.c:31,84,395              the runtime borrows the store from its config and passes it to sig_project_load
+//   host/posix/main.c:238                            the host selects &sig_persistence_file_module as cfg.store_module
+//   grep over src/ include/ host/                    sig_persistence_registry_* is called only from test/test_sig_persistence.c; no code in src/ or host/
+//                                                    creates or looks up in a registry
+//   docs/architecture.md                             not needed for any statement here
+model {
+  extend sig {
+    persistence = module 'Persistence' {
+      technology 'sig_persistence.h, sig_persistence_file.h; part of sig::sig'
+      description '
+        A pluggable store of opaque blobs under a (namespace, key) pair. What a
+        namespace means, and which names are valid, is up to the backend. The
+        library ships one backend, the file backend. The project reads and writes
+        its configuration and service documents through it. The hooks block, so
+        they are meant for configuration input and output, not for an event
+        loop hot path.
+      '
+
+      store = component 'Store interface' {
+        technology 'sig_persistence_module, sig_persistence_create/load/save/remove/list'
+        description '
+          A backend is a sig_persistence_module: a name, create and destroy, and
+          the data hooks load, save, remove and list. sig_persistence_create
+          binds a backend to a config string and keeps the state it returns; the
+          data calls check their arguments and forward to the hook. A NULL
+          argument, or a backend with no such hook, is SIG_ERR_INVALID_ARG.
+          load returns a sig_alloc buffer that the caller frees and reports a
+          missing key as SIG_ERR_NOT_FOUND; save creates or replaces the key and
+          only borrows the data; remove reports a missing key as
+          SIG_ERR_NOT_FOUND; list calls back once per key and stops at the first
+          status other than SIG_OK. The callback must not save or remove keys in
+          the namespace being listed.
+        '
+      }
+
+      registry = component 'Backend registry' {
+        technology 'sig_persistence_registry_*; sig_ht'
+        description '
+          A name-to-backend table: register adds a backend under its name
+          (the backend must have one), lookup finds it again. The registry only
+          borrows the backend structs. Nothing in src/ or host/ uses it in this
+          repository; the host passes the file backend directly. It is exercised
+          by the unit tests.
+        '
+      }
+
+      file = component 'File backend' {
+        technology 'sig_persistence_file_module ("file"); stdio, dirent, POSIX'
+        description '
+          Maps a namespace to a directory under a base directory (its config
+          string; NULL or empty is refused, and the directory is neither checked
+          nor created when the backend is created). A key lives at
+          base/ns/key.cfg for the "configurations" and "services" namespaces and
+          at base/ns/key.sig for any other namespace. A namespace is 1 to 64
+          characters of letters, digits, underscore or hyphen. A key is 1 to 128
+          bytes with no slash, no two consecutive dots and no control character;
+          so "My Svc" and "v1.2" are valid. A name that breaks the rules is
+          SIG_ERR_INVALID_ARG before the filesystem is touched. load and remove
+          report a missing file as SIG_ERR_NOT_FOUND; other filesystem failures
+          are SIG_ERR_PLATFORM. list returns the regular files with the
+          namespace extension and a valid key as stem, extension stripped and
+          sorted bytewise; a missing namespace directory lists zero keys.
+        '
+      }
+
+      atomic = component 'Atomic save' {
+        technology 'file_save in sig_persistence_file.c'
+        description '
+          save creates every missing directory down to base/ns (mode 0755, the
+          base directory included), writes the data to key.ext.tmp in the
+          namespace directory, flushes and fsyncs it, closes it and renames it
+          over key.ext. A reader or a crash sees the old file or the new one, not
+          a half-written file. If the write or the rename fails, the temporary
+          file is removed and the old content stays in place. The directory
+          itself is not fsynced.
+        '
+      }
+    }
+  }
+
+  sig.persistence.store -[calls]-> sig.persistence.file 'forwards to the hooks of the backend it was created with (the file backend is the one the library ships)'
+  sig.persistence.registry -[calls]-> sig.persistence.store 'holds the sig_persistence_module structs that sig_persistence_create binds'
+  sig.persistence.file -[calls]-> sig.persistence.atomic 'save writes through the temp file and rename'
+  sig.persistence.registry -[calls]-> sig.foundation.containers 'backends kept in a sig_ht'
+  sig.persistence.store -[calls]-> sig.foundation.allocation 'allocates the handle; load hands a sig_alloc buffer to the caller'
+  sig.persistence.store -[calls]-> sig.foundation.logging 'trace line after a successful load, save or remove'
+  sig.persistence.file -[calls]-> sig.foundation.allocation 'paths, key lists and the loaded buffer'
+  sig.project.loader -[calls]-> sig.persistence.store 'sig_persistence_list and sig_persistence_load on the configurations namespace, then the services namespace'
+  sig.project.editing -[calls]-> sig.persistence.store 'sig_persistence_save of the edited document (plus a newline) and sig_persistence_remove on delete'
+}
+
+views {
+  view persistence {
+    title 'Persistence'
+    include sig.persistence, sig.persistence.*
+  }
+
+  view persistence_components of sig.persistence {
+    title 'Persistence components'
+    include *
+  }
+}

@@ -1,0 +1,4 @@
+dist/
+node_modules/
+reference/
+model/generated.c4

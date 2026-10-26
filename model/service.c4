@@ -1,0 +1,189 @@
+// Service: include/sig/runtime/sig_service.h (src/runtime/sig_service.c). The header
+// lives in include/sig/runtime/ but is its own area, separate from the runtime.
+//
+// Sources (everything below was checked against these):
+//   include/sig/runtime/sig_service.h        threading contract at the top; enqueue / schedule_job / driven-mode / tap comments
+//   src/runtime/sig_service.c:12-54          struct sig_job, struct sig_service: queue (sig_ll) + queue_mtx + queue_cond, thread, driven, wake,
+//                                            running, accepting, atomic started, jobs, atomic tap slot, dead_jobs
+//   src/runtime/sig_service.c:71-86          drain_batch: input tap, then terminal->handler(instance, &signal, name), then the copy is destroyed
+//   src/runtime/sig_service.c:148-178        unlink_due_jobs: a repeating job advances next_fire past every missed interval (no catch-up burst)
+//   src/runtime/sig_service.c:318-375        sig_service_set_tap swaps an immutable slot atomically; tap_emit is one atomic load when the slot is NULL
+//   src/runtime/sig_service.c:454-517        lifecycle_walk_fn: sig_capsule_instance_resolve, then the start hook; run_lifecycle_hooks unwinds on failure
+//   src/runtime/sig_service.c:538-569        step_locked: swap out the queue batch, deliver it without the lock, then run due jobs unless stopping
+//   src/runtime/sig_service.c:571-601        service_thread_main: condition wait / timedwait on queue_cond, exits when not running and queue empty
+//   src/runtime/sig_service.c:628-664        sig_service_start: opens the queue, runs start hooks, then sig_thread_create unless driven; started = true last
+//   src/runtime/sig_service.c:666-714        set_driven (SIG_ERR_STATE if started), sig_service_step (SIG_ERR_STATE unless started and driven)
+//   src/runtime/sig_service.c:716-757        sig_service_stop: accepting = false, running = false, notify, then join (or drain inline if driven),
+//                                            cancel_all_jobs, then stop hooks on the calling thread
+//   src/runtime/sig_service.c:759-805        sig_service_enqueue: sig_value_dup under no lock, push under queue_mtx, notify, then wake callback
+//   src/runtime/sig_service.c:807-863        MIN_JOB_INTERVAL 1 ms; schedule_job notifies the condition and wakes the owner; cancel_job
+//   src/runtime/sig_service.c:1-7            includes sig_alloc.h, sig_ht.h, sig_ll.h, sig_log.h, sig_thread.h, sig_time.h
+//   src/runtime/sig_capsule.c:449-478        sig_capsule_instance_notify calls sig_service_tap_emit (output) and sig_service_enqueue (cited for the dynamic view)
+//   src/runtime/sig_runtime.c:199-212        the runtime sets wake and driven mode on a service (cited for "wake callback")
+//   docs/architecture.md                     "Scheduling" and "Service lifecycle" agree with the header and code on all points used here
+model {
+  extend sig {
+    service = module 'Service' {
+      technology 'sig_service.h; part of sig::sig'
+      description '
+        A service is a worker thread with a signal queue and a job scheduler,
+        owning a set of capsule instances by name (it borrows them; the project
+        owns them). Once a service is started, terminal handlers and lifecycle
+        hooks of its instances run on its own thread, except that start hooks run
+        on the thread that called start and stop hooks on the thread that called
+        stop. A service can instead be driven by an event loop, with no thread of
+        its own.
+      '
+
+      lifecycle = component 'Start and stop' {
+        technology 'sig_service_create/start/stop/destroy'
+        description '
+          sig_service_start runs every instance start hook SYNCHRONOUSLY on the
+          calling thread, before the worker thread is spawned, so the hooks have
+          run when start returns. Before each start hook the instance properties
+          are resolved. If resolving or a hook fails, the instances already
+          started get their stop hook, scheduled jobs are canceled, no thread is
+          spawned, and the service stays stopped and can be started again.
+          sig_service_stop stops accepting signals, then joins the worker thread
+          FIRST (a driven service has no worker: the calling thread drains the
+          queued signals itself, sig_service.c:731-743), cancels jobs, then runs
+          the stop hooks on the calling thread.
+          Starting a started service is SIG_ERR_EXISTS; stopping or destroying a
+          never-started or stopped service is a safe no-op; destroy stops a
+          running service first.
+        '
+      }
+
+      instances = component 'Owned instance set' {
+        technology 'sig_service_add_instance and walks; sig_ht'
+        description '
+          Instances are added by name; the service borrows them and sets
+          instance->service. The name, running flag, instance count and instance
+          walk are introspection that is safe from any thread once the set is
+          final: instances are only added while a service is being built (project
+          load, or a rebuild of a stopped service after an edit), never while it
+          is started. sig_service_is_running is an atomic read.
+        '
+      }
+
+      queue = component 'Signal queue' {
+        technology 'sig_service_enqueue; sig_ll under a mutex'
+        description '
+          sig_service_enqueue copies the signal (sig_value_dup) into a heap-owned
+          entry, pushes it under the queue lock and signals the queue condition
+          variable. Safe from any thread, including the thread of the service
+          itself; the sender keeps ownership of what it passed. Delivery is
+          asynchronous and FIFO per destination service. A service accepts
+          signals from creation until stop begins; from then until the next start
+          it returns SIG_ERR_STATE and drops the signal. A handler that emits
+          during the final drain at stop gets SIG_ERR_STATE, so a chain of
+          capsules inside the service is cut at the first hop.
+        '
+      }
+
+      scheduler = component 'Job scheduler' {
+        technology 'sig_service_schedule_job/cancel_job'
+        description '
+          Runs a callback on the thread of the service after an interval, once or
+          repeating. The interval must be at least 1 ms (SIG_ERR_INVALID_ARG
+          otherwise). A repeating job that overruns its interval skips the missed
+          fires instead of bursting to catch up. Safe to schedule before the
+          thread exists (from a start hook), from the worker itself, or from any
+          other thread. A job node whose handle was requested is kept until the
+          service is destroyed, so a handle can always be canceled safely; pass
+          no handle for jobs that never need canceling. Cancel is a no-op if the
+          job already fired or was canceled.
+        '
+      }
+
+      worker = component 'Worker thread' {
+        technology 'service_thread_main; sig_thread'
+        description '
+          One thread per started, non-driven service. It waits on the queue
+          condition variable, with a timed wait to the next job deadline, so an
+          idle service uses no CPU. Each pass delivers the batch of queued signals
+          and then runs the jobs that are due, both outside the queue lock. The
+          thread exits once the service is not running and the queue is empty.
+          Terminal handlers and jobs run here, which is why an instance belongs to
+          this thread.
+        '
+      }
+
+      driven = component 'Driven mode' {
+        technology 'sig_service_set_driven/step/set_wake'
+        description '
+          With driven set (not allowed on a started service, SIG_ERR_STATE),
+          start spawns no thread and the owner calls sig_service_step, which
+          delivers the queued signals, runs due jobs and reports the next deadline
+          (a deadline of now means more is queued). The wake callback is called
+          with no lock held whenever a signal is enqueued or a job is scheduled or
+          canceled, so the loop can recompute its sleep; set it before starting.
+          Stop on a driven service delivers the signals still queued before it
+          returns.
+        '
+      }
+
+      tap = component 'Tap slot' {
+        technology 'sig_service_set_tap, sig_service_tap_emit'
+        description '
+          Holds the optional observer for the signal tap. sig_service_set_tap is
+          safe from any thread at any time; the function and its context change
+          together atomically, and a replaced tap may still be running on the
+          service thread when the call returns. With no tap the cost on the signal
+          path is one atomic pointer load. sig_service_tap_emit is called by the
+          capsule on output and by the delivery loop before an input handler; it
+          is not for capsule code.
+        '
+      }
+    }
+  }
+
+  sig.service.lifecycle -[calls]-> sig.service.worker 'spawns it unless the service is driven; joins it first on stop'
+  sig.service.lifecycle -[calls]-> sig.service.queue 'opens the queue before start hooks; closes it at stop and on a failed start'
+  sig.service.lifecycle -[calls]-> sig.service.scheduler 'cancels all jobs at stop and on a failed start'
+  sig.service.lifecycle -[calls]-> sig.capsules.instance 'resolves properties, then runs start hooks on the calling thread; stop hooks after the join'
+  sig.service.lifecycle -[calls]-> sig.platform.threads 'sig_thread_create, sig_thread_join'
+  sig.service.instances -[calls]-> sig.foundation.containers 'instances kept in a sig_ht'
+  sig.service.queue -[calls]-> sig.foundation.values 'sig_value_dup copies the signal'
+  sig.service.queue -[calls]-> sig.foundation.containers 'entries kept in a sig_ll'
+  sig.service.queue -[signals]-> sig.service.worker 'notifies the queue condition variable'
+  sig.service.queue -[signals]-> sig.service.driven 'calls the wake callback of the owner, with no lock held'
+  sig.service.scheduler -[signals]-> sig.service.worker 'notifies the condition so the wait deadline is recomputed'
+  sig.service.scheduler -[calls]-> sig.platform.time 'sig_time_now for the next fire time'
+  sig.service.worker -[calls]-> sig.platform.threads 'sig_condition_wait and timedwait on the queue lock'
+  sig.service.worker -[calls]-> sig.service.tap 'input tap just before the handler'
+  sig.service.worker -[calls]-> sig.capsules.terminals 'terminal->handler(instance, signal, name) on the thread of the service'
+  sig.service.worker -[calls]-> sig.service.scheduler 'runs the jobs that are due'
+  sig.service.driven -[calls]-> sig.service.queue 'a step delivers the queued batch'
+  sig.service.driven -[calls]-> sig.service.scheduler 'a step runs the jobs that are due'
+  sig.service.driven -[calls]-> sig.service.tap 'input tap before each handler'
+  sig.service.driven -[calls]-> sig.capsules.terminals 'handlers run on the thread that steps'
+  sig.service.tap -[calls]-> sig.platform.threads 'set_tap takes the queue lock to swap the slot'
+  sig.service.lifecycle -[calls]-> sig.foundation.logging 'logs start, stop and hook failures'
+  sig.service.lifecycle -[calls]-> sig.foundation.allocation 'allocates the service and its tables'
+}
+
+views {
+  view service {
+    title 'Service'
+    include sig.service, sig.service.*
+  }
+
+  view service_components of sig.service {
+    title 'Service components'
+    include *
+  }
+
+  dynamic view signal_delivery {
+    title 'Signal delivery'
+    description 'A capsule emits a value on an output terminal and a handler on the receiving service runs. The value is copied at the queue, and the signal tap can observe it at both ends.'
+
+    sig.capsules.capsule -> sig.capsules.routes 'Capsule code calls sig_capsule_instance_notify(src, "out", &value): from a handler or job on the worker of the source service, or from a start/stop hook on the thread that called start/stop'
+    sig.capsules.routes -> sig.service.tap 'Output tap point: sig_service_tap_emit(SIG_TAP_OUTPUT) before the route lookup, so unrouted outputs are seen too; one atomic load if no tap is set'
+    sig.capsules.routes -> sig.service.queue 'For each route: the input terminal is found by name on the destination capsule, then sig_service_enqueue on the service of the destination (no route: the signal is dropped; one failure does not stop the others)'
+    sig.service.queue -> sig.foundation.values 'sig_value_dup deep-copies the signal into a queue entry, so the sender keeps ownership and does not wait for the receiver to run'
+    sig.service.queue -> sig.service.worker 'Pushed under the queue lock, queue condition variable notified (a driven service calls its wake callback instead)'
+    sig.service.worker -> sig.service.tap 'Input tap point: sig_service_tap_emit(SIG_TAP_INPUT) just before the handler, on this worker thread'
+    sig.service.worker -> sig.capsules.terminals 'terminal->handler(instance, &copy, terminal_name) runs on the thread of the destination service; the copy is destroyed afterwards'
+  }
+}

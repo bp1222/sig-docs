@@ -1,0 +1,99 @@
+// Platform: include/sig/platform and include/sig/net (src/platform/posix, src/net).
+//
+// Sources (everything below was checked against these):
+//   docs/architecture.md                    "Everything OS-specific is behind sig_thread.h and sig_time.h ... sig_poller.h and sig_net.h";
+//                                           "Only POSIX backends exist today (src/platform/posix/)"; build targets table (sig::net, SIG_NET)
+//   CMakeLists.txt                          sig links src/platform/posix/sig_thread_posix.c, sig_time_posix.c, sig_poller_${SIG_POLLER}.c;
+//                                           SIG_POLLER defaults to kqueue on Apple/BSD, poll elsewhere (epoll selectable);
+//                                           sig_net (alias sig::net) is built only with SIG_NET and links sig
+//   include/sig/platform/sig_thread.h       mutex, condition (notify wakes ALL waiters), sig_rwlock ("Not recursive", writers not starved), TLS, threads
+//   src/platform/posix/sig_thread_posix.c   timedwait uses sig_time_now (includes sig_time.h)
+//   include/sig/platform/sig_time.h         sig_time_now
+//   src/platform/posix/sig_time_posix.c     clock_gettime(CLOCK_MONOTONIC)
+//   include/sig/platform/sig_poller.h       backend contract: level-triggered; only sig_poller_wake from another thread; chosen with -DSIG_POLLER
+//   src/platform/posix/sig_poller_{poll,kqueue,epoll}.c   include sig_alloc.h (calloc/free); wake via pipe, EVFILT_USER, eventfd
+//   include/sig/net/sig_net.h               TCP primitives, IPv4 only, POSIX only, "optional sig::net target (SIG_NET)", sockets non-blocking
+//   src/net/sig_net_posix.c                 includes sig_alloc.h and sig_log.h; uses poll() directly (not sig_poller)
+//   src/mgmt/sig_mgmt.c                     a user of sig_rwlock (outside this area; cited for the "used by sig_mgmt" statement)
+model {
+  extend sig {
+    platform = module 'Platform' {
+      technology 'CMake targets sig::sig (threads, time, poller) and sig::net (TCP, SIG_NET)'
+      description '
+        Everything OS-specific, behind headers. Threads, time and the poller are
+        part of sig::sig and always built; the TCP layer is the optional sig::net
+        target, built with -DSIG_NET=ON. Only POSIX implementations exist today
+        (src/platform/posix and src/net/sig_net_posix.c); the rest of libsig
+        does not include OS headers. A port to another system replaces these
+        files and nothing above them.
+      '
+
+      threads = component 'Threads and synchronization' {
+        technology 'sig_thread.h; POSIX threads'
+        description '
+          Threads, mutexes, condition variables, thread-local storage, and
+          sig_rwlock (many readers or one writer, built on sig_mutex and
+          sig_condition; a waiting writer blocks new readers; not recursive). sig_condition_notify
+          wakes all waiters on every platform, which the rwlock relies on.
+          sig_condition_timedwait takes an absolute CLOCK_MONOTONIC deadline
+          and returns SIG_OK on both notify and timeout, so callers re-check
+          their own state. sig_mgmt uses sig_rwlock to guard its operations.
+        '
+      }
+
+      time = component 'Time' {
+        technology 'sig_time.h; clock_gettime'
+        description '
+          sig_time_now returns the monotonic clock (CLOCK_MONOTONIC) as a
+          struct timespec, the clock sig_condition_timedwait deadlines are
+          measured on. A read of the system clock with no shared state, so it is
+          safe from any thread.
+        '
+      }
+
+      poller = component 'Poller backends' {
+        technology 'sig_poller.h; poll, kqueue or epoll'
+        description '
+          Readiness notification for file descriptors under sig_loop. Exactly one
+          backend is linked, chosen at build time with -DSIG_POLLER=poll|kqueue|epoll
+          (default kqueue on Apple and BSD, poll elsewhere). Only POSIX backends
+          exist. Level-triggered. Only sig_poller_wake may be called from a
+          thread other than the one inside sig_poller_wait; add, modify and
+          remove are made by the waiting thread or before it starts. A closed fd
+          must be removed first.
+        '
+      }
+
+      net = component 'TCP sockets' {
+        technology 'sig_net.h; BSD sockets'
+        description '
+          Minimal TCP server primitives: listen, accept, read and write, IPv4
+          only, numeric addresses only. In the optional sig::net target (SIG_NET),
+          not in sig::sig. Sockets are always non-blocking and every wait goes
+          through poll() with a caller-supplied timeout (a negative one waits
+          forever); a timeout of 0 turns accept and read into polls, so
+          the descriptors can be registered with a sig_loop. Writes never raise
+          SIGPIPE. The header states no cross-thread rules for a listener or
+          connection, so use each from one thread at a time.
+        '
+      }
+    }
+  }
+
+  sig.platform.threads -[calls]-> sig.platform.time 'deadlines for timed waits'
+  sig.platform.poller -[calls]-> sig.foundation.allocation 'allocates the poller state'
+  sig.platform.net -[calls]-> sig.foundation.allocation 'allocates listeners and connections'
+  sig.platform.net -[calls]-> sig.foundation.logging 'logs listen failures'
+}
+
+views {
+  view platform {
+    title 'Platform'
+    include sig.platform, sig.platform.*
+  }
+
+  view platform_components of sig.platform {
+    title 'Platform components'
+    include *
+  }
+}

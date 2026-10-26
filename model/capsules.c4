@@ -1,0 +1,174 @@
+// Capsules: include/sig/runtime/sig_capsule.h (src/runtime/sig_capsule.c) and the
+// built-in registration shim in capsules/ (sig_builtin_capsules.c/.h). The
+// individual capsule implementations (capsules/<name>/) are not modelled here.
+//
+// Sources (everything below was checked against these):
+//   include/sig/runtime/sig_capsule.h        sig_terminal, sig_capsule (name, terminal tables, nullable start/stop, property table, category),
+//                                            sig_property and SIG_PROP_* helpers, sig_capsule_configuration, struct sig_capsule_instance
+//                                            (storage, service, state + state_dtor, routes, resolved properties), threading comments on each
+//   src/runtime/sig_capsule.c:35-118         registry: a sig_ht of capsule pointers keyed by name; register, walk, lookup
+//   src/runtime/sig_capsule.c:120-161        configuration create/destroy: name + borrowed capsule + sig_ht of boxed property values
+//   src/runtime/sig_capsule.c:207-268        instance create/destroy: storage and routes tables, state_dtor called on destroy
+//   src/runtime/sig_capsule.c:331-386        connect: one sig_ll of routes per output terminal name; several connects fan out
+//   src/runtime/sig_capsule.c:418-478        notify: tap (output) first if the instance has a service, then route lookup, then per route the input
+//                                            terminal is found by name and sig_service_enqueue is called; last failure status returned
+//   src/runtime/sig_capsule.c:480-495        schedule/cancel are thin wrappers over the service of instance->service
+//   src/runtime/sig_capsule.c:632-671        sig_capsule_configuration_validate: required, types, ranges, choices, unknown names
+//   src/runtime/sig_capsule.c:710-776        sig_capsule_instance_resolve: checks values, applies defaults, int widened to double for double properties
+//   src/runtime/sig_service.c:454-486        lifecycle_walk_fn: sig_service_start resolves properties before the start hook
+//   capsules/sig_builtin_capsules.c:1-72     one #ifdef SIG_CAPSULE_<NAME> block per capsule: counter, logger, simulator, weather, filter,
+//                                            switch, state_change; each calls sig_capsule_registry_register and returns the first failure
+//   capsules/CMakeLists.txt:58-66            sig_builtin_capsules is a static library linking sig and every built sig_capsule_<name>; the
+//                                            SIG_CAPSULE_<NAME> definitions are set for each capsule that was built
+//   capsules/CMakeLists.txt:12-22            a capsule whose capsule.cmake requires http_client is skipped with a warning when SIG_HTTP_CLIENT is off
+//   capsules/weather/capsule.cmake           weather sets SIG_CAP_REQUIRES http_client
+//   CMakeLists.txt:41,220-223                SIG_CAPSULES defaults to counter;simulator;logger;filter;switch;state_change; capsules/ is added only with SIG_HOST
+//   capsules/weather/weather_capsule.h:5     the only file under capsules/ that includes a header of an optional module (<sig/http/sig_http_client.h>);
+//                                            capsules/weather/capsule.cmake:6 links sig::http_client. No other capsule or shim file includes sig/http, net, mgmt or feed.
+//   host/posix/main.c:226-230                the host creates a registry and calls sig_builtin_capsules_register
+//   docs/architecture.md                     "Naming" (capsule, configuration, instance) and rule 1 agree with the header. The document says seven
+//                                            capsules exist; the shim knows seven, but the default SIG_CAPSULES builds six (weather needs SIG_HTTP_CLIENT).
+model {
+  extend sig {
+    capsules = module 'Capsules' {
+      technology 'sig_capsule.h; part of sig::sig, with the shim in capsules/ (target sig_builtin_capsules, SIG_HOST)'
+      description '
+        Three layers in a 1 : n : n relationship. A capsule is compiled-in static
+        code; a capsule configuration is a named configuration of one capsule
+        (a capsule plus properties), available to any service in the project;
+        a capsule instance is one configuration used by one service, with its
+        own storage, state and routes. This is what runs. An instance takes the
+        name of its configuration, so a configuration appears at most once per
+        service.
+      '
+
+      registry = component 'Capsule registry' {
+        technology 'sig_capsule_registry_*; sig_ht'
+        description '
+          A table of capsules by name. The host creates it and registers every
+          compiled-in capsule before the project is loaded; the runtime and
+          project borrow it and it must outlive them. Capsules are static data
+          and are never copied, so each must outlive every configuration that
+          references it. The registry can be walked and looked up by name.
+        '
+      }
+
+      capsule = component 'Capsule' {
+        technology 'struct sig_capsule; static const data'
+        description '
+          Compiled-in code and its description: a name, a table of input
+          terminals (each with a handler) and of output terminals, a table of
+          properties (sig_property), optional start and stop hooks and an
+          optional category (source, sink, flow or state). It is data, not
+          behaviour: the other components call into the functions it points at.
+          A capsule with no property table accepts any configuration properties.
+        '
+      }
+
+      configuration = component 'Capsule configuration' {
+        technology 'sig_capsule_configuration_*; sig_ht of boxed values'
+        description '
+          A named configuration: a borrowed capsule plus the property values
+          set for it (the config parser accepts only int, bool, double and
+          string). Validation checks a
+          configuration against the property table of its capsule: required
+          properties present, types, int ranges, string choices, and no unknown
+          names. The properties table is not internally synchronized, but a
+          configuration is not modified after project load, so walking its
+          properties is safe from any thread then. The configuration must outlive
+          every instance that references it.
+        '
+      }
+
+      instance = component 'Capsule instance' {
+        technology 'sig_capsule_instance_*; sig_ht, opaque state'
+        description '
+          One configuration as used by one service. It holds storage (a table of
+          boxed sig_value, not internally synchronized), an opaque state pointer
+          with an optional destructor, its routes, and the property values
+          resolved at start (checked, defaults applied, read by index with
+          sig_capsule_instance_int and friends). Rule: an instance belongs to its
+          service. Handlers and jobs run on the service worker thread; start
+          and stop hooks run on the thread that calls sig_service_start or
+          sig_service_stop (before the worker is spawned, after it is joined),
+          so storage and state are serialized with the worker rather than
+          touched by one thread. The one thread-safe way to affect an instance
+          from elsewhere is a signal. (sig_capsule.h says hooks run on the
+          service thread and sig_service.h says both; the model follows
+          src/runtime/sig_service.c:628-760.) Schedule and cancel wrap the scheduler of the service of
+          the instance.
+        '
+      }
+
+      routes = component 'Routes and notify' {
+        technology 'sig_capsule_instance_connect/notify/walk_routes'
+        description '
+          connect records that an output terminal of one instance delivers to an
+          input terminal of another; several connects on one output fan out.
+          Routes are set at load time, before the instance is in a started
+          service. notify tells the tap about the output (before the route
+          lookup), then for every route enqueues a copy on the service of the
+          destination. An output with no routes silently drops the signal.
+          Delivery is best-effort across routes: one failing destination does
+          not stop the rest, and the status of the last failure is returned.
+          Reading the routes (notify, walk_routes) is safe once the project is
+          loaded; connecting concurrently with notify on a running instance is
+          not.
+        '
+      }
+
+      terminals = component 'Terminal handlers' {
+        technology 'sig_terminal, sig_terminal_fn'
+        description '
+          A terminal is a name plus, for inputs, a handler
+          (instance, signal, terminal name) that returns a status. Handlers run
+          on the thread of the destination service (the loop thread when
+          services are driven), not on the emitter.
+          The signal is borrowed for the call; the queue owns the copy.
+        '
+      }
+
+      shim = component 'Built-in capsule registration' {
+        technology 'capsules/sig_builtin_capsules.c; target sig_builtin_capsules'
+        description '
+          sig_builtin_capsules_register adds every capsule selected at build time
+          to a registry, stopping at the first failure. Each capsule has one
+          #ifdef block, and the definitions come from the SIG_CAPSULES build
+          option (default counter, simulator, logger, filter, switch and
+          state_change). The weather capsule is known to the shim but is not in the
+          default list; if listed, it is skipped with a warning unless the HTTP
+          client is enabled. The shim
+          is a separate static library on top of sig::sig, built only with
+          SIG_HOST, and is called by the host entry point.
+        '
+      }
+    }
+  }
+
+  sig.capsules.registry -[calls]-> sig.foundation.containers 'capsules kept in a sig_ht by name'
+  sig.capsules.registry -[calls]-> sig.foundation.allocation 'allocates the registry'
+  sig.capsules.shim -[calls]-> sig.capsules.registry 'registers each built-in capsule'
+  sig.capsules.shim -[calls]-> sig.http.client 'the weather capsule, if listed in SIG_CAPSULES and SIG_HTTP_CLIENT is on, takes sig_http_get_async as its transport (weather_capsule.h includes sig_http_client.h)'
+  sig.capsules.configuration -[owns]-> sig.foundation.values 'boxed property values'
+  sig.capsules.configuration -[calls]-> sig.capsules.capsule 'validates against the property table of the capsule'
+  sig.capsules.instance -[calls]-> sig.capsules.configuration 'resolves property values at start'
+  sig.capsules.instance -[calls]-> sig.service.scheduler 'schedule and cancel jobs on instance->service'
+  sig.capsules.instance -[calls]-> sig.foundation.containers 'storage and routes are sig_ht'
+  sig.capsules.instance -[calls]-> sig.foundation.logging 'logs resolve errors'
+  sig.capsules.routes -[calls]-> sig.service.tap 'output tap before the route lookup'
+  sig.capsules.routes -[calls]-> sig.service.queue 'sig_service_enqueue on the service of the destination'
+  sig.capsules.routes -[calls]-> sig.foundation.containers 'one sig_ll of routes per output terminal'
+  sig.capsules.routes -[calls]-> sig.capsules.terminals 'finds the destination input terminal by name'
+}
+
+views {
+  view capsules {
+    title 'Capsules'
+    include sig.capsules, sig.capsules.*
+  }
+
+  view capsules_components of sig.capsules {
+    title 'Capsules components'
+    include *
+  }
+}

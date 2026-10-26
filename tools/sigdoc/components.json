@@ -1,0 +1,288 @@
+{
+  "runtime": {
+    "sig.runtime.lifecycle": [
+      "sig_runtime_create",
+      "sig_runtime_destroy",
+      "sig_runtime_start",
+      "sig_runtime_stop",
+      "sig_runtime_project",
+      "sig_runtime_capsules",
+      "sig_runtime_version"
+    ],
+    "sig.runtime.shutdown": [
+      "sig_runtime_request_shutdown",
+      "sig_runtime_wait",
+      "sig_runtime_shutdown_requested"
+    ],
+    "sig.runtime.modules": [
+      "sig_runtime_register_module",
+      "sig_runtime_module_state",
+      "sig_runtime_walk_modules"
+    ],
+    "sig.runtime.control": [
+      "sig_runtime_edit",
+      "sig_runtime_service_*",
+      "sig_runtime_uptime_seconds",
+      "sig_runtime_dump_info",
+      "sig_runtime_find_terminal"
+    ],
+    "sig.runtime.tap": [
+      "sig_runtime_set_tap"
+    ],
+    "sig.runtime.loop": [
+      "sig_loop_*"
+    ],
+    "sig.runtime.stepping": [
+      "sig_runtime_set_loop",
+      "sig_runtime_loop",
+      "sig_runtime_step"
+    ]
+  },
+  "service": {
+    "sig.service.lifecycle": [
+      "sig_service_create",
+      "sig_service_destroy",
+      "sig_service_start",
+      "sig_service_stop"
+    ],
+    "sig.service.instances": [
+      "sig_service_add_instance",
+      "sig_service_get_instance",
+      "sig_service_name",
+      "sig_service_is_running",
+      "sig_service_instance_count",
+      "sig_service_walk_instances"
+    ],
+    "sig.service.queue": [
+      "sig_service_enqueue"
+    ],
+    "sig.service.scheduler": [
+      "sig_service_schedule_job",
+      "sig_service_cancel_job"
+    ],
+    "sig.service.worker": [],
+    "sig.service.driven": [
+      "sig_service_set_driven",
+      "sig_service_is_driven",
+      "sig_service_step",
+      "sig_service_set_wake"
+    ],
+    "sig.service.tap": [
+      "sig_service_set_tap",
+      "sig_service_tap_emit"
+    ]
+  },
+  "project": {
+    "sig.project.parser": [],
+    "sig.project.loader": [
+      "sig_project_load"
+    ],
+    "sig.project.ownership": [
+      "sig_project_destroy",
+      "sig_project_start_auto",
+      "sig_project_stop_all"
+    ],
+    "sig.project.introspection": [
+      "sig_project_get_service",
+      "sig_project_service_count",
+      "sig_project_walk_services",
+      "sig_project_get_configuration",
+      "sig_project_get_configuration_json",
+      "sig_project_walk_configurations",
+      "sig_project_walk_configuration_uses",
+      "sig_project_get_service_json"
+    ],
+    "sig.project.editing": [
+      "sig_project_put_*",
+      "sig_project_patch_*",
+      "sig_project_delete_*",
+      "sig_project_rename_configuration",
+      "sig_project_last_error"
+    ],
+    "sig.project.dirty": [
+      "sig_project_service_dirty",
+      "sig_project_refresh_service"
+    ]
+  },
+  "capsules": {
+    "sig.capsules.registry": [
+      "sig_capsule_registry_*"
+    ],
+    "sig.capsules.capsule": [],
+    "sig.capsules.configuration": [
+      "sig_capsule_configuration_*"
+    ],
+    "sig.capsules.instance": [
+      "sig_capsule_instance_create",
+      "sig_capsule_instance_destroy",
+      "sig_capsule_instance_resolve",
+      "sig_capsule_instance_int",
+      "sig_capsule_instance_bool",
+      "sig_capsule_instance_double",
+      "sig_capsule_instance_string",
+      "sig_capsule_instance_set_storage",
+      "sig_capsule_instance_get_storage",
+      "sig_capsule_instance_set_state",
+      "sig_capsule_instance_get_state",
+      "sig_capsule_instance_schedule",
+      "sig_capsule_instance_cancel"
+    ],
+    "sig.capsules.routes": [
+      "sig_capsule_instance_connect",
+      "sig_capsule_instance_walk_routes",
+      "sig_capsule_instance_notify"
+    ],
+    "sig.capsules.terminals": [],
+    "sig.capsules.shim": []
+  },
+  "http": {
+    "sig.http.server": [
+      "sig_http_server_module",
+      "sig_http_server_from_runtime",
+      "sig_http_server_register",
+      "sig_http_server_get_port",
+      "sig_http_server_register_upgrade"
+    ],
+    "sig.http.dispatch": [],
+    "sig.http.threaded": [],
+    "sig.http.looped": [],
+    "sig.http.parser": [],
+    "sig.http.ws": [
+      "sig_ws_*"
+    ],
+    "sig.http.client": [
+      "sig_http_client_get",
+      "sig_http_get_async"
+    ]
+  },
+  "mgmt": {
+    "sig.mgmt.module": [
+      "sig_mgmt_module",
+      "sig_mgmt_from_runtime"
+    ],
+    "sig.mgmt.reads": [
+      "sig_mgmt_system",
+      "sig_mgmt_list_*",
+      "sig_mgmt_get_*"
+    ],
+    "sig.mgmt.actions": [
+      "sig_mgmt_start_service",
+      "sig_mgmt_stop_service",
+      "sig_mgmt_restart_service",
+      "sig_mgmt_request_shutdown"
+    ],
+    "sig.mgmt.edits": [
+      "sig_mgmt_put_*",
+      "sig_mgmt_patch_*",
+      "sig_mgmt_delete_*",
+      "sig_mgmt_rename_*"
+    ],
+    "sig.mgmt.rest": [],
+    "sig.mgmt.status": [],
+    "sig.mgmt.glue": [
+      "sig_mgmt_http_module"
+    ]
+  },
+  "persistence": {
+    "sig.persistence.store": [
+      "sig_persistence_create",
+      "sig_persistence_destroy",
+      "sig_persistence_load",
+      "sig_persistence_save",
+      "sig_persistence_remove",
+      "sig_persistence_list"
+    ],
+    "sig.persistence.registry": [
+      "sig_persistence_registry_*"
+    ],
+    "sig.persistence.file": [],
+    "sig.persistence.atomic": []
+  },
+  "platform": {
+    "sig.platform.threads": [
+      "sig_mutex_*",
+      "sig_condition_*",
+      "sig_rwlock_*",
+      "sig_tls_*",
+      "sig_thread_*"
+    ],
+    "sig.platform.time": [
+      "sig_time_*"
+    ],
+    "sig.platform.poller": [
+      "sig_poller_*"
+    ],
+    "sig.platform.net": [
+      "sig_net_*"
+    ]
+  },
+  "feed": {
+    "sig.feed.module": [
+      "sig_signal_feed_module"
+    ],
+    "sig.feed.upgrade": [],
+    "sig.feed.connection": [],
+    "sig.feed.hub": [],
+    "sig.feed.tap": [],
+    "sig.feed.queue": [],
+    "sig.feed.messages": []
+  },
+  "foundation": {
+    "sig.foundation.allocation": [
+      "sig_alloc*",
+      "sig_calloc",
+      "sig_realloc",
+      "sig_free",
+      "sig_strdup",
+      "_sig_*"
+    ],
+    "sig.foundation.status": [],
+    "sig.foundation.refcount": [
+      "sig_refcount_*"
+    ],
+    "sig.foundation.containers": [
+      "sig_ht_*",
+      "sig_ll_*"
+    ],
+    "sig.foundation.logging": [
+      "sig_log_*"
+    ],
+    "sig.foundation.values": [
+      "sig_value_int",
+      "sig_value_bool",
+      "sig_value_double",
+      "sig_value_string*",
+      "sig_value_bytes",
+      "sig_value_kind",
+      "sig_value_dtor*",
+      "sig_value_copy",
+      "sig_value_dup",
+      "sig_value_box",
+      "sig_value_get_*",
+      "sig_value_map*",
+      "sig_value_list*",
+      "sig_value_count",
+      "sig_value_merge_patch",
+      "sig_value_is_shared"
+    ],
+    "sig.foundation.json": [
+      "sig_json_*",
+      "sig_value_to_json",
+      "sig_value_from_json"
+    ],
+    "sig.foundation.expressions": [
+      "sig_expr_*"
+    ],
+    "sig.foundation.python": [
+      "sig_value_to_pyobject",
+      "sig_value_from_pyobject"
+    ]
+  },
+  "host": {
+    "sig.host.runner": [
+      "sig_host_run"
+    ],
+    "sig.host.shutdown": [],
+    "sig.host.entry": []
+  }
+}

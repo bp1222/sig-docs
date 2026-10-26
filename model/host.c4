@@ -1,0 +1,131 @@
+// Host: host/include/sig/sig_host.h and host/sig_host.c (target sig::host), and the POSIX
+// entry point host/posix/ (main.c, sig_host_posix.c/.h; executable sighost).
+//
+// Sources (everything below was checked against these):
+//   host/include/sig/sig_host.h          header comment (boot order), sig_host_config (store_module required, store_config, capsules required,
+//                                        modules registered in order, single_threaded), sig_host_platform (arm_shutdown, disarm_shutdown, both
+//                                        nullable; disarm only if arm succeeded), SIG_PUBLIC sig_host_run is the only SIG_PUBLIC function
+//   host/sig_host.c:8-23                 host_step: sig_runtime_step, then sig_loop_stop once sig_runtime_shutdown_requested
+//   host/sig_host.c:25-102               sig_host_run: argument check, sig_persistence_create, sig_runtime_create, loop (single_threaded only:
+//                                        create, set_step, sig_runtime_set_loop), register modules in order, arm_shutdown, sig_runtime_start,
+//                                        sig_loop_run or sig_runtime_wait, sig_runtime_stop, disarm_shutdown, then destroy the runtime, the
+//                                        loop and last the store; any failure jumps to the destroy step
+//   host/CMakeLists.txt                  sig_host static library (alias sig::host) links sig; the platform directory is a subdirectory
+//   host/posix/CMakeLists.txt            sighost links sig_host and sig_builtin_capsules; sig_mgmt_http and SIG_HOST_HAVE_MGMT_HTTP only when
+//                                        SIG_MGMT and SIG_HTTP_SERVER; sig_signal_feed and SIG_HOST_HAVE_SIGNAL_FEED only inside that, with SIG_SIGNAL_FEED
+//   host/posix/main.c                    getopt_long options p, l, m, o, s, h and --configure-from / --configure-path; checks; module order
+//   host/posix/sig_host_posix.c/.h       posix_arm_shutdown (thread mode: block SIGINT, SIGTERM, SIGINFO, sigwait thread; loop mode: handlers
+//                                        write a self-pipe watched by the loop), posix_disarm_shutdown, SIGINFO dump to stderr
+//   CMakeLists.txt:40,215-223            SIG_HOST (default ON on APPLE or UNIX); capsules/ and host/ are added only with SIG_HOST
+//   capsules/sig_builtin_capsules.h      sig_builtin_capsules_register, called by main (modelled in capsules.c4 as sig.capsules.shim)
+//   docs/architecture.md                 "Host" concept; layering box lists host/posix main.c and "sigwait shutdown". The document describes
+//                                        only the sigwait thread; the code also has a loop mode with no thread (-s).
+model {
+  extend sig {
+    host = module 'Host' {
+      technology 'sig_host.h; CMake target sig::host and the sighost executable (SIG_HOST)'
+      description '
+        The program that runs a project. sig_host_run is the portable boot
+        sequence; host/posix supplies the command line, the shutdown trigger
+        and the choice of persistence backend. The host registers the runtime
+        modules it is given and knows nothing about particular capsules,
+        runtime modules or signals; main.c is what selects them.
+      '
+
+      runner = component 'Boot runner' {
+        technology 'sig_host_run, host_step; host/sig_host.c'
+        description '
+          sig_host_run opens the persistence store (any backend), creates the
+          runtime with the store and the capsule registry, and, if
+          single_threaded is set, creates a sig_loop, installs the host step
+          hook and gives the loop to the runtime. It then registers every
+          module of the configuration in order, arms the platform shutdown
+          trigger, starts the runtime, and waits: sig_runtime_wait, or
+          sig_loop_run in single-threaded mode. Then it stops the runtime,
+          disarms the trigger and destroys the runtime, the loop and the store,
+          the store last because the runtime borrows it. Everything runs on
+          the calling thread. The step hook runs sig_runtime_step and stops
+          the loop once a shutdown has been requested. A failure before the
+          start jumps to the destroy sequence (nothing is armed yet, or arming
+          itself failed); a failed start is still followed by the disarm. The
+          status of the first failure is returned, and a clean shutdown
+          returns SIG_OK. A NULL store module, capsule registry or module is
+          SIG_ERR_INVALID_ARG. The host does not check that a file store
+          directory exists.
+        '
+      }
+
+      shutdown = component 'POSIX shutdown trigger' {
+        technology 'sig_host_posix_platform, posix_arm_shutdown; host/posix/sig_host_posix.c'
+        description '
+          The POSIX implementation of the sig_host_platform seam (an
+          arm_shutdown and a disarm_shutdown hook). In threaded mode it blocks
+          SIGINT and SIGTERM, and SIGINFO where it exists, in the arming
+          thread and starts a thread that waits for them with sigwait(); a
+          signal calls sig_runtime_request_shutdown, which is not
+          async-signal-safe and so cannot run in a handler. In single-threaded
+          mode there is no thread: handlers whose only action is an
+          async-signal-safe write() to a self-pipe, which the loop watches and
+          which makes the same call on the loop thread. SIGINFO writes a
+          runtime snapshot to stderr and does not stop anything. Disarm joins
+          the thread and restores the signal mask, or restores the handlers
+          and closes the pipe.
+        '
+      }
+
+      entry = component 'sighost entry point' {
+        technology 'main, usage; host/posix/main.c'
+        description '
+          Parses the command line (-p <dir>, --configure-path=<dir> or one bare
+          directory, default ./cfg; --configure-from=file, the only backend;
+          -l log level, default trace; -s single-threaded; -h help) and, when
+          built with the management API and the HTTP server, -m
+          [addr:]port and -o origin (-o requires -m). It refuses a path that is
+          not a directory, initialises logging on stdout, creates the capsule
+          registry and fills it with the built-in capsules, and builds the
+          module list. With -m that list is the HTTP server (configured with
+          bind, port and cors_origin), management and the management glue, in
+          that order, then the signal feed if it was built; without -m no
+          runtime module is registered. It calls sig_host_run with the file
+          store and the POSIX platform and returns exit code 1 on any failure.
+        '
+      }
+    }
+  }
+
+  sig.host.runner -[calls]-> sig.persistence.store 'sig_persistence_create opens the store; sig_persistence_destroy closes it last'
+  sig.host.runner -[calls]-> sig.runtime.lifecycle 'sig_runtime_create, start, stop and destroy'
+  sig.host.runner -[calls]-> sig.runtime.modules 'sig_runtime_register_module for each configured module, in order'
+  sig.host.runner -[calls]-> sig.runtime.loop 'single-threaded only: sig_loop_create, sig_loop_set_step, sig_loop_run, sig_loop_destroy'
+  sig.host.runner -[calls]-> sig.runtime.stepping 'single-threaded only: sig_runtime_set_loop; the step hook calls sig_runtime_step'
+  sig.host.runner -[calls]-> sig.runtime.shutdown 'sig_runtime_wait (threaded) or sig_runtime_shutdown_requested in the step hook'
+  sig.host.runner -[calls]-> sig.host.shutdown 'arm_shutdown before start; disarm_shutdown after stop'
+  sig.host.runner -[calls]-> sig.foundation.logging 'logs the store that was opened'
+  sig.host.shutdown -[signals]-> sig.runtime.shutdown 'sig_runtime_request_shutdown on SIGINT or SIGTERM'
+  sig.host.shutdown -[calls]-> sig.runtime.control 'sig_runtime_dump_info on SIGINFO'
+  sig.host.shutdown -[calls]-> sig.runtime.loop 'single-threaded only: watches the self-pipe with sig_loop_watch_fd'
+  sig.host.shutdown -[calls]-> sig.foundation.allocation 'allocates its state'
+  sig.host.shutdown -[calls]-> sig.foundation.logging 'logs the received signal'
+  sig.host.entry -[calls]-> sig.host.runner 'sig_host_run with the file store, the registry, the modules and the flag'
+  sig.host.entry -[calls]-> sig.host.shutdown 'sig_host_posix_platform supplies the hooks'
+  sig.host.entry -[calls]-> sig.persistence.file 'passes sig_persistence_file_module and the project directory'
+  sig.host.entry -[calls]-> sig.capsules.registry 'creates the registry before the run and destroys it after'
+  sig.host.entry -[calls]-> sig.capsules.shim 'sig_builtin_capsules_register'
+  sig.host.entry -[calls]-> sig.http.server 'sig_http_server_module, with -m'
+  sig.host.entry -[calls]-> sig.mgmt.module 'sig_mgmt_module, with -m'
+  sig.host.entry -[calls]-> sig.mgmt.glue 'sig_mgmt_http_module, with -m'
+  sig.host.entry -[calls]-> sig.feed.module 'sig_signal_feed_module, with -m when the feed was built'
+  sig.host.entry -[calls]-> sig.foundation.logging 'sig_log_init and sig_log_shutdown'
+}
+
+views {
+  view host {
+    title 'Host'
+    include sig.host, sig.host.*
+  }
+
+  view host_components of sig.host {
+    title 'Host components'
+    include *
+  }
+}
