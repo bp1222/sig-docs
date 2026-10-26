@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sig_capsule.h - libsig reference</title><style>:root{color-scheme:light dark;--bg:#fff;--fg:#1b1f24;--mut:#59636e;--bd:#d0d7de;--code:#f6f8fa;--note:#fff8c5;--lnk:#0969da}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--mut:#9198a1;--bd:#30363d;--code:#161b22;--note:#3b2e00;--lnk:#58a6ff}}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;margin:0 auto;max-width:56rem;padding:1rem 16px 3rem}
+a{color:var(--lnk)}code,pre{font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+pre{background:var(--code);padding:.6rem .8rem;overflow-x:auto;border-radius:6px}
+.note{background:var(--note);border-left:4px solid var(--bd);padding:.5rem .8rem;margin:1rem 0;white-space:pre-wrap}
+.item{border-top:1px solid var(--bd);margin-top:1.5rem;padding-top:.5rem}
+.doc{white-space:pre-wrap;color:var(--fg)}table{border-collapse:collapse}th,td{border:1px solid var(--bd);padding:.25rem .6rem;text-align:left}
+nav{color:var(--mut)}.shared{color:var(--mut);font-size:.9em;margin:.4rem 0 0}</style></head>
+<body>
+<nav><a href="index.html">Reference index</a> / capsules / <a href="/sig-docs/architecture/">Architecture site</a></nav>
+<h1>sig_capsule.h</h1>
+<p><code>include/sig/runtime/sig_capsule.h</code></p>
+<section class="item" id="sig_capsule_instance"><h3>sig_capsule_instance</h3><pre>typedef struct sig_capsule_instance sig_capsule_instance;</pre></section>
+<section class="item" id="sig_job"><h3>sig_job</h3><pre>typedef struct sig_job sig_job;</pre></section>
+<section class="item" id="sig_job_fn"><h3>sig_job_fn</h3><pre>typedef void (*sig_job_fn)(sig_capsule_instance *instance, void *job_data);</pre></section>
+<section class="item" id="macro-SIG_TERMINAL_DEFAULT"><h3>SIG_TERMINAL_DEFAULT</h3><pre>#define SIG_TERMINAL_DEFAULT &quot;__default_terminal_value&quot;</pre></section>
+<section class="item" id="sig_terminal_fn"><h3>sig_terminal_fn</h3><pre>typedef sig_status_t (*sig_terminal_fn)(sig_capsule_instance *instance, const sig_value *signal,
+                                        const char *terminal_name);</pre></section>
+<section class="item" id="sig_terminal"><h3>sig_terminal</h3><pre>typedef struct {
+    const char *name;
+    sig_terminal_fn handler; /* meaningful for input terminals only */
+} sig_terminal;</pre></section>
+<section class="item" id="sig_capsule_lifecycle_fn"><h3>sig_capsule_lifecycle_fn</h3><pre>typedef sig_status_t (*sig_capsule_lifecycle_fn)(sig_capsule_instance *instance);</pre></section>
+<section class="item" id="sig_property_type"><h3>sig_property_type</h3><pre>typedef enum {
+    SIG_PROPERTY_INT,
+    SIG_PROPERTY_BOOL,
+    SIG_PROPERTY_DOUBLE, /* an integer in the configuration is accepted and widened */
+    SIG_PROPERTY_STRING,
+} sig_property_type;</pre><p class="doc">A configurable property of a capsule. A capsule declares its properties once,
+in a table; the framework validates a configuration against it, applies the
+defaults, and hands the capsule typed values (sig_capsule_instance_int() and
+friends) indexed by the property's position in the table. Declare the table
+with designated initializers keyed by an enum so a hook reads the property by
+name in the source and by index at run time:
+
+  enum { SIM_END, SIM_STEP };
+  static const sig_property sim_props[] = {
+      [SIM_END]  = SIG_PROP_INT_REQUIRED(&quot;end&quot;, &quot;Inclusive upper bound&quot;),
+      [SIM_STEP] = SIG_PROP_INT_MIN(&quot;step&quot;, 1, 1, &quot;Increment&quot;),
+  };</p></section>
+<section class="item" id="sig_property"><h3>sig_property</h3><pre>typedef struct {
+    const char *name;
+    sig_property_type type;
+    bool required; /* if true there is no default */
+    union {
+        sig_int_t i;
+        bool b;
+        double d;
+        const char *s;
+    } def;        /* used when !required */
+    bool has_min; /* ints only */
+    sig_int_t min;
+    bool has_max;
+    sig_int_t max;
+    const char *choices; /* strings only: NULL, or &quot;a|b|c&quot;, compared case-insensitively */
+    const char *description;
+} sig_property;</pre></section>
+<section class="item" id="macro-SIG_PROP_INT"><h3>SIG_PROP_INT</h3><pre>#define SIG_PROP_INT(nm, dv, ds) \
+    { .name = (nm), .type = SIG_PROPERTY_INT, .def.i = (dv), .description = (ds) }</pre></section>
+<section class="item" id="macro-SIG_PROP_INT_REQUIRED"><h3>SIG_PROP_INT_REQUIRED</h3><pre>#define SIG_PROP_INT_REQUIRED(nm, ds) \
+    { .name = (nm), .type = SIG_PROPERTY_INT, .required = true, .description = (ds) }</pre></section>
+<section class="item" id="macro-SIG_PROP_INT_MIN"><h3>SIG_PROP_INT_MIN</h3><pre>#define SIG_PROP_INT_MIN(nm, dv, lo, ds) \
+    { .name = (nm),                      \
+      .type = SIG_PROPERTY_INT,          \
+      .def.i = (dv),                     \
+      .has_min = true,                   \
+      .min = (lo),                       \
+      .description = (ds) }</pre></section>
+<section class="item" id="macro-SIG_PROP_INT_REQUIRED_MIN"><h3>SIG_PROP_INT_REQUIRED_MIN</h3><pre>#define SIG_PROP_INT_REQUIRED_MIN(nm, lo, ds) \
+    { .name = (nm),                           \
+      .type = SIG_PROPERTY_INT,               \
+      .required = true,                       \
+      .has_min = true,                        \
+      .min = (lo),                            \
+      .description = (ds) }</pre></section>
+<section class="item" id="macro-SIG_PROP_INT_RANGE"><h3>SIG_PROP_INT_RANGE</h3><pre>#define SIG_PROP_INT_RANGE(nm, dv, lo, hi, ds) \
+    { .name = (nm),                            \
+      .type = SIG_PROPERTY_INT,                \
+      .def.i = (dv),                           \
+      .has_min = true,                         \
+      .min = (lo),                             \
+      .has_max = true,                         \
+      .max = (hi),                             \
+      .description = (ds) }</pre></section>
+<section class="item" id="macro-SIG_PROP_BOOL"><h3>SIG_PROP_BOOL</h3><pre>#define SIG_PROP_BOOL(nm, dv, ds) \
+    { .name = (nm), .type = SIG_PROPERTY_BOOL, .def.b = (dv), .description = (ds) }</pre></section>
+<section class="item" id="macro-SIG_PROP_DOUBLE"><h3>SIG_PROP_DOUBLE</h3><pre>#define SIG_PROP_DOUBLE(nm, dv, ds) \
+    { .name = (nm), .type = SIG_PROPERTY_DOUBLE, .def.d = (dv), .description = (ds) }</pre></section>
+<section class="item" id="macro-SIG_PROP_STRING"><h3>SIG_PROP_STRING</h3><pre>#define SIG_PROP_STRING(nm, dv, ds) \
+    { .name = (nm), .type = SIG_PROPERTY_STRING, .def.s = (dv), .description = (ds) }</pre></section>
+<section class="item" id="macro-SIG_PROP_STRING_CHOICES"><h3>SIG_PROP_STRING_CHOICES</h3><pre>#define SIG_PROP_STRING_CHOICES(nm, dv, list, ds) \
+    { .name = (nm), .type = SIG_PROPERTY_STRING, .def.s = (dv), .choices = (list), .description = (ds) }</pre></section>
+<section class="item" id="sig_capsule"><h3>sig_capsule</h3><pre>typedef struct {
+    const char *name;
+    size_t num_input_terminals;
+    const sig_terminal *input_terminals;
+    size_t num_output_terminals;
+    const sig_terminal *output_terminals;
+    sig_capsule_lifecycle_fn start; /* nullable */
+    sig_capsule_lifecycle_fn stop;  /* nullable */
+    size_t num_properties;          /* 0: no table, any configuration properties are accepted */
+    const sig_property *properties; /* the capsule's property table, see sig_property */
+    /* What the capsule is for, shown by the management API: &quot;source&quot; (only
+     * emits), &quot;sink&quot; (only consumes), &quot;flow&quot; (routes or filters a stream) or
+     * &quot;state&quot; (keeps state across signals). NULL: uncategorized. */
+    const char *category;
+} sig_capsule;</pre></section>
+<section class="item" id="sig_capsule_registry"><h3>sig_capsule_registry</h3><pre>typedef struct sig_capsule_registry sig_capsule_registry;</pre></section>
+<section class="item" id="sig_capsule_registry_create"><h3>sig_capsule_registry_create</h3><pre>sig_status_t sig_capsule_registry_create(sig_capsule_registry ** out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>out</code></td><td><code>sig_capsule_registry **</code></td></tr></tbody></table></section>
+<section class="item" id="sig_capsule_registry_destroy"><h3>sig_capsule_registry_destroy</h3><pre>void sig_capsule_registry_destroy(sig_capsule_registry * reg)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>reg</code></td><td><code>sig_capsule_registry *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_capsule_registry_register"><h3>sig_capsule_registry_register</h3><pre>sig_status_t sig_capsule_registry_register(sig_capsule_registry * reg, const sig_capsule * capsule)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>reg</code></td><td><code>sig_capsule_registry *</code></td></tr><tr><td><code>capsule</code></td><td><code>const sig_capsule *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_capsule_fn"><h3>sig_capsule_fn</h3><pre>typedef sig_status_t (*sig_capsule_fn)(const sig_capsule *capsule, void *ctx);</pre><p class="doc">Visits every registered capsule, in unspecified order. A non-SIG_OK
+return from fn stops the walk and becomes the result.</p></section>
+<section class="item" id="sig_capsule_registry_walk"><h3>sig_capsule_registry_walk</h3><pre>sig_status_t sig_capsule_registry_walk(const sig_capsule_registry * reg, sig_capsule_fn fn, void * ctx)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>reg</code></td><td><code>const sig_capsule_registry *</code></td></tr><tr><td><code>fn</code></td><td><code>sig_capsule_fn</code></td></tr><tr><td><code>ctx</code></td><td><code>void *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_capsule_fn">sig_capsule_fn</a></p><p class="doc">Visits every registered capsule, in unspecified order. A non-SIG_OK
+return from fn stops the walk and becomes the result.</p></section>
+<section class="item" id="sig_capsule_registry_lookup"><h3>sig_capsule_registry_lookup</h3><pre>sig_status_t sig_capsule_registry_lookup(const sig_capsule_registry * reg, const char * name, const sig_capsule ** out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>reg</code></td><td><code>const sig_capsule_registry *</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>out</code></td><td><code>const sig_capsule **</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_capsule_fn">sig_capsule_fn</a></p><p class="doc">Visits every registered capsule, in unspecified order. A non-SIG_OK
+return from fn stops the walk and becomes the result.</p></section>
+<section class="item" id="sig_capsule_configuration"><h3>sig_capsule_configuration</h3><pre>typedef struct {
+    char *name;
+    const sig_capsule *capsule; /* borrowed, not owned: capsule must
+                                       * outlive every sig_capsule_configuration that
+                                       * references it, since the pointer
+                                       * is never copied. */
+    sig_ht *properties;         /* string -&gt; boxed sig_value, dtor = sig_value_dtor_v.
+                                           * Like all sig_ht instances, this table is NOT
+                                           * internally synchronized (see sig_ht.h). A
+                                           * sig_capsule_configuration shared across instances/threads needs
+                                           * caller-provided locking (e.g. sig_mutex from
+                                           * sig_thread.h) around property access. */
+} sig_capsule_configuration;</pre></section>
+<section class="item" id="sig_capsule_configuration_create"><h3>sig_capsule_configuration_create</h3><pre>sig_status_t sig_capsule_configuration_create(sig_capsule_configuration ** out, const char * name, const sig_capsule * module)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>out</code></td><td><code>sig_capsule_configuration **</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>module</code></td><td><code>const sig_capsule *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_capsule_configuration_destroy"><h3>sig_capsule_configuration_destroy</h3><pre>void sig_capsule_configuration_destroy(sig_capsule_configuration * capsule)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>capsule</code></td><td><code>sig_capsule_configuration *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_capsule_configuration_set_property"><h3>sig_capsule_configuration_set_property</h3><pre>sig_status_t sig_capsule_configuration_set_property(sig_capsule_configuration * capsule, const char * key, const sig_value * value)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>capsule</code></td><td><code>sig_capsule_configuration *</code></td></tr><tr><td><code>key</code></td><td><code>const char *</code></td></tr><tr><td><code>value</code></td><td><code>const sig_value *</code></td></tr></tbody></table><p class="doc">Shares, does not take ownership of *value: value is boxed via
+sig_value_copy's share semantics (see sig_value.h), not consumed.
+The caller still owns *value and must still call sig_value_dtor()
+on it themselves.</p></section>
+<section class="item" id="sig_capsule_configuration_get_property"><h3>sig_capsule_configuration_get_property</h3><pre>sig_status_t sig_capsule_configuration_get_property(const sig_capsule_configuration * capsule, const char * key, const sig_value ** out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>capsule</code></td><td><code>const sig_capsule_configuration *</code></td></tr><tr><td><code>key</code></td><td><code>const char *</code></td></tr><tr><td><code>out</code></td><td><code>const sig_value **</code></td></tr></tbody></table><p class="doc">out is a borrowed pointer into the capsule's property store: valid
+only until the next sig_capsule_configuration_set_property() call on the SAME key,
+which destroys the previously boxed value in place (via
+sig_ht_update) and invalidates any pointer this function returned
+for that key. Not owned by the caller; do not free.</p></section>
+<section class="item" id="sig_capsule_configuration_property_fn"><h3>sig_capsule_configuration_property_fn</h3><pre>typedef sig_status_t (*sig_capsule_configuration_property_fn)(const char *key, const sig_value *value,
+                                                              void *ctx);</pre><p class="doc">Read-only enumeration of a capsule configuration's configured properties
+(the config-time table; this is not live capsule state). Order is
+unspecified. A non-SIG_OK return from fn stops the walk and becomes
+its result. `value` is borrowed for the duration of the callback. A
+configuration's properties are not mutated after project load, so this
+is safe from any thread then.</p></section>
+<section class="item" id="sig_capsule_configuration_property_count"><h3>sig_capsule_configuration_property_count</h3><pre>uint32_t sig_capsule_configuration_property_count(const sig_capsule_configuration * capsule)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>capsule</code></td><td><code>const sig_capsule_configuration *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_capsule_configuration_walk_properties"><h3>sig_capsule_configuration_walk_properties</h3><pre>sig_status_t sig_capsule_configuration_walk_properties(const sig_capsule_configuration * capsule, sig_capsule_configuration_property_fn fn, void * ctx)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>capsule</code></td><td><code>const sig_capsule_configuration *</code></td></tr><tr><td><code>fn</code></td><td><code>sig_capsule_configuration_property_fn</code></td></tr><tr><td><code>ctx</code></td><td><code>void *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_service"><h3>sig_service</h3><pre>typedef struct sig_service sig_service;</pre></section>
+<section class="item" id="sig_capsule_instance-2"><h3>sig_capsule_instance</h3><pre>struct sig_capsule_instance {
+    char *name;
+    const sig_capsule_configuration *configuration; /* borrowed, not owned: configuration must outlive
+                               * every sig_capsule_instance that references
+                               * it, since the pointer is never copied. */
+    sig_ht *storage;                                /* string -&gt; boxed sig_value, dtor = sig_value_dtor_v.
+                                 * Like all sig_ht instances, this table is NOT
+                                 * internally synchronized (see sig_ht.h). A
+                                 * sig_capsule_instance touched from more than one
+                                 * thread needs caller-provided locking (e.g.
+                                 * sig_mutex from sig_thread.h) around storage
+                                 * access. */
+    sig_service *service;                           /* borrowed; set by sig_service_add_instance().
+                                 * NULL until the instance is added to a
+                                 * service. Once non-NULL, the instance is
+                                 * &quot;running&quot;: only that service's own thread
+                                 * may safely touch this instance's storage/
+                                 * state directly, from inside a handler
+                                 * or lifecycle hook. sig_capsule_instance_notify()
+                                 * (added later in this sub-project) is the
+                                 * only thread-safe way to affect a running
+                                 * instance from any other thread. */
+    void *state;
+    void (*state_dtor)(void *state); /* nullable; called with state by
+                                           * sig_capsule_instance_destroy()
+                                           * if state is non-NULL. */
+    sig_ht *routes;                  /* output terminal name -&gt; sig_ll of destination
+                                 * routes (private sig_route entries, defined in
+                                 * sig_capsule.c). Populated by
+                                 * sig_capsule_instance_connect(). Same sig_ht
+                                 * synchronization caveat as storage -- connect()
+                                 * calls before the instance is added to a
+                                 * started service, or from that service's own
+                                 * thread, are safe; concurrent connect() calls
+                                 * from other threads on a running instance are
+                                 * not. */
+    /* The capsule's property values, resolved at start and read with
+     * sig_capsule_instance_int() and friends. NULL until resolved. */
+    sig_value *properties;
+    size_t num_properties;
+};</pre></section>
+<section class="item" id="sig_capsule_configuration_validate"><h3>sig_capsule_configuration_validate</h3><pre>sig_status_t sig_capsule_configuration_validate(const sig_capsule_configuration * configuration, char * err, size_t err_cap)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>configuration</code></td><td><code>const sig_capsule_configuration *</code></td></tr><tr><td><code>err</code></td><td><code>char *</code></td></tr><tr><td><code>err_cap</code></td><td><code>size_t</code></td></tr></tbody></table><p class="doc">Checks the configuration's properties against its capsule's table: required
+present, types, int ranges, string choices, and no unknown names. SIG_OK, or
+SIG_ERR_INVALID_ARG with a message such as &quot;end: required&quot; or &quot;step: must be
+&gt;= 1&quot; copied (truncated) into err[0..err_cap) when err is non-NULL. A capsule
+without a table accepts everything.</p></section>
+<section class="item" id="sig_capsule_instance_create"><h3>sig_capsule_instance_create</h3><pre>sig_status_t sig_capsule_instance_create(sig_capsule_instance ** out, const char * name, const sig_capsule_configuration * capsule)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>out</code></td><td><code>sig_capsule_instance **</code></td></tr><tr><td><code>name</code></td><td><code>const char *</code></td></tr><tr><td><code>capsule</code></td><td><code>const sig_capsule_configuration *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_capsule_instance_destroy"><h3>sig_capsule_instance_destroy</h3><pre>void sig_capsule_instance_destroy(sig_capsule_instance * instance)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>instance</code></td><td><code>sig_capsule_instance *</code></td></tr></tbody></table></section>
+<section class="item" id="sig_capsule_instance_resolve"><h3>sig_capsule_instance_resolve</h3><pre>sig_status_t sig_capsule_instance_resolve(sig_capsule_instance * instance)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>instance</code></td><td><code>sig_capsule_instance *</code></td></tr></tbody></table><p class="doc">Resolves the instance's configuration against the capsule's property table:
+checks every value, applies defaults, and fills the values read by the
+accessors below. Replaces any earlier resolution. sig_service_start() calls
+this before the capsule's start hook, so a hook may rely on it; a capsule's
+unit test that calls a hook directly must call it first. SIG_ERR_INVALID_ARG
+(logged, naming the property) if a value is invalid or a required one is
+missing. An unknown property only logs a warning here (sig_capsule_
+configuration_validate() rejects it). A capsule without a table resolves to
+nothing and the accessors are unused.</p></section>
+<section class="item" id="sig_capsule_instance_int"><h3>sig_capsule_instance_int</h3><pre>sig_int_t sig_capsule_instance_int(const sig_capsule_instance * instance, size_t index)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>instance</code></td><td><code>const sig_capsule_instance *</code></td></tr><tr><td><code>index</code></td><td><code>size_t</code></td></tr></tbody></table><p class="doc">Typed reads of a resolved property by its index in the capsule's table. Safe
+from the capsule's hooks, terminal handlers and job callbacks. An index out
+of range, a property of another type, or an instance that has not been
+resolved logs an error and returns 0 / false / 0.0 / &quot;&quot; -- it never crashes.
+The string is owned by the instance and valid until the next resolve or the
+instance's destruction.</p></section>
+<section class="item" id="sig_capsule_instance_bool"><h3>sig_capsule_instance_bool</h3><pre>bool sig_capsule_instance_bool(const sig_capsule_instance * instance, size_t index)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>instance</code></td><td><code>const sig_capsule_instance *</code></td></tr><tr><td><code>index</code></td><td><code>size_t</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_capsule_instance_int">sig_capsule_instance_int</a></p><p class="doc">Typed reads of a resolved property by its index in the capsule's table. Safe
+from the capsule's hooks, terminal handlers and job callbacks. An index out
+of range, a property of another type, or an instance that has not been
+resolved logs an error and returns 0 / false / 0.0 / &quot;&quot; -- it never crashes.
+The string is owned by the instance and valid until the next resolve or the
+instance's destruction.</p></section>
+<section class="item" id="sig_capsule_instance_double"><h3>sig_capsule_instance_double</h3><pre>double sig_capsule_instance_double(const sig_capsule_instance * instance, size_t index)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>instance</code></td><td><code>const sig_capsule_instance *</code></td></tr><tr><td><code>index</code></td><td><code>size_t</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_capsule_instance_int">sig_capsule_instance_int</a></p><p class="doc">Typed reads of a resolved property by its index in the capsule's table. Safe
+from the capsule's hooks, terminal handlers and job callbacks. An index out
+of range, a property of another type, or an instance that has not been
+resolved logs an error and returns 0 / false / 0.0 / &quot;&quot; -- it never crashes.
+The string is owned by the instance and valid until the next resolve or the
+instance's destruction.</p></section>
+<section class="item" id="sig_capsule_instance_string"><h3>sig_capsule_instance_string</h3><pre>const char * sig_capsule_instance_string(const sig_capsule_instance * instance, size_t index)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>instance</code></td><td><code>const sig_capsule_instance *</code></td></tr><tr><td><code>index</code></td><td><code>size_t</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_capsule_instance_int">sig_capsule_instance_int</a></p><p class="doc">Typed reads of a resolved property by its index in the capsule's table. Safe
+from the capsule's hooks, terminal handlers and job callbacks. An index out
+of range, a property of another type, or an instance that has not been
+resolved logs an error and returns 0 / false / 0.0 / &quot;&quot; -- it never crashes.
+The string is owned by the instance and valid until the next resolve or the
+instance's destruction.</p></section>
+<section class="item" id="sig_capsule_instance_set_storage"><h3>sig_capsule_instance_set_storage</h3><pre>sig_status_t sig_capsule_instance_set_storage(sig_capsule_instance * instance, const char * key, const sig_value * value)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>instance</code></td><td><code>sig_capsule_instance *</code></td></tr><tr><td><code>key</code></td><td><code>const char *</code></td></tr><tr><td><code>value</code></td><td><code>const sig_value *</code></td></tr></tbody></table><p class="doc">Shares, does not take ownership of *value: value is boxed via
+sig_value_copy's share semantics (see sig_value.h), not consumed.
+The caller still owns *value and must still call sig_value_dtor()
+on it themselves.</p></section>
+<section class="item" id="sig_capsule_instance_get_storage"><h3>sig_capsule_instance_get_storage</h3><pre>sig_status_t sig_capsule_instance_get_storage(const sig_capsule_instance * instance, const char * key, const sig_value ** out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>instance</code></td><td><code>const sig_capsule_instance *</code></td></tr><tr><td><code>key</code></td><td><code>const char *</code></td></tr><tr><td><code>out</code></td><td><code>const sig_value **</code></td></tr></tbody></table><p class="doc">out is a borrowed pointer into the instance's storage: valid only
+until the next sig_capsule_instance_set_storage() call on the SAME
+key, which destroys the previously boxed value in place (via
+sig_ht_update) and invalidates any pointer this function returned
+for that key. Not owned by the caller; do not free.</p></section>
+<section class="item" id="sig_capsule_instance_set_state"><h3>sig_capsule_instance_set_state</h3><pre>sig_status_t sig_capsule_instance_set_state(sig_capsule_instance * instance, void * state, void (*)(void *) dtor)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>instance</code></td><td><code>sig_capsule_instance *</code></td></tr><tr><td><code>state</code></td><td><code>void *</code></td></tr><tr><td><code>dtor</code></td><td><code>void (*)(void *)</code></td></tr></tbody></table><p class="doc">Takes ownership of `state` conceptually: `dtor` (nullable) is called
+with `state` by sig_capsule_instance_destroy(), or by a later
+sig_capsule_instance_set_state() call that replaces it. Use this
+for per-instance resources that aren't sig_value data (a socket fd,
+a timer handle, a scratch buffer) — sig_capsule_instance's storage map
+only holds sig_value.</p></section>
+<section class="item" id="sig_capsule_instance_get_state"><h3>sig_capsule_instance_get_state</h3><pre>void * sig_capsule_instance_get_state(const sig_capsule_instance * instance)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>instance</code></td><td><code>const sig_capsule_instance *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_capsule_instance_set_state">sig_capsule_instance_set_state</a></p><p class="doc">Takes ownership of `state` conceptually: `dtor` (nullable) is called
+with `state` by sig_capsule_instance_destroy(), or by a later
+sig_capsule_instance_set_state() call that replaces it. Use this
+for per-instance resources that aren't sig_value data (a socket fd,
+a timer handle, a scratch buffer) — sig_capsule_instance's storage map
+only holds sig_value.</p></section>
+<section class="item" id="sig_capsule_instance_connect"><h3>sig_capsule_instance_connect</h3><pre>sig_status_t sig_capsule_instance_connect(sig_capsule_instance * src, const char * out_terminal, sig_capsule_instance * dest, const char * in_terminal)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>src</code></td><td><code>sig_capsule_instance *</code></td></tr><tr><td><code>out_terminal</code></td><td><code>const char *</code></td></tr><tr><td><code>dest</code></td><td><code>sig_capsule_instance *</code></td></tr><tr><td><code>in_terminal</code></td><td><code>const char *</code></td></tr></tbody></table><p class="doc">Records that signals emitted on src's out_terminal should be
+delivered to dest's in_terminal. May be called multiple times for
+the same out_terminal to fan out to multiple destinations. Safe to
+call before either instance is added to a service; unsafe to call
+concurrently with sig_capsule_instance_notify() on the same src from
+a different thread once src's instance is running in a started
+service (see the routes field comment above).</p></section>
+<section class="item" id="sig_capsule_route_fn"><h3>sig_capsule_route_fn</h3><pre>typedef sig_status_t (*sig_capsule_route_fn)(const char *out_terminal, const sig_capsule_instance *dest,
+                                             const char *in_terminal, void *ctx);</pre><p class="doc">Visits every route recorded by sig_capsule_instance_connect() on
+`instance`, in unspecified order. out_terminal, dest and in_terminal
+are borrowed for the duration of the callback. A non-SIG_OK return
+from fn stops the walk and becomes this function's result. Reads the
+same unsynchronized routes table as notify(): safe once the project
+is loaded (routes are only added at load time).</p></section>
+<section class="item" id="sig_capsule_instance_walk_routes"><h3>sig_capsule_instance_walk_routes</h3><pre>sig_status_t sig_capsule_instance_walk_routes(const sig_capsule_instance * instance, sig_capsule_route_fn fn, void * ctx)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>instance</code></td><td><code>const sig_capsule_instance *</code></td></tr><tr><td><code>fn</code></td><td><code>sig_capsule_route_fn</code></td></tr><tr><td><code>ctx</code></td><td><code>void *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_capsule_route_fn">sig_capsule_route_fn</a></p><p class="doc">Visits every route recorded by sig_capsule_instance_connect() on
+`instance`, in unspecified order. out_terminal, dest and in_terminal
+are borrowed for the duration of the callback. A non-SIG_OK return
+from fn stops the walk and becomes this function's result. Reads the
+same unsynchronized routes table as notify(): safe once the project
+is loaded (routes are only added at load time).</p></section>
+<section class="item" id="sig_capsule_instance_notify"><h3>sig_capsule_instance_notify</h3><pre>sig_status_t sig_capsule_instance_notify(sig_capsule_instance * src, const char * out_terminal, const sig_value * signal)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>src</code></td><td><code>sig_capsule_instance *</code></td></tr><tr><td><code>out_terminal</code></td><td><code>const char *</code></td></tr><tr><td><code>signal</code></td><td><code>const sig_value *</code></td></tr></tbody></table><p class="doc">Emits signal on src's out_terminal, delivering (asynchronously, via
+each destination's owning service's queue -- see sig_service.h) to
+every instance connected via sig_capsule_instance_connect(). Not an
+error if out_terminal has no connected routes -- the signal is
+simply dropped. Best-effort across multiple routes: a failure
+delivering to one connected destination does not stop delivery to
+the others; returns SIG_OK only if every route succeeded, otherwise
+the status of the last route that failed (e.g. SIG_ERR_INVALID_ARG
+if a destination instance was never added to any service).</p></section>
+<section class="item" id="sig_capsule_instance_schedule"><h3>sig_capsule_instance_schedule</h3><pre>sig_status_t sig_capsule_instance_schedule(sig_capsule_instance * instance, struct timespec interval, bool repeat, sig_job_fn callback, void * job_data, sig_job ** out_job)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>instance</code></td><td><code>sig_capsule_instance *</code></td></tr><tr><td><code>interval</code></td><td><code>struct timespec</code></td></tr><tr><td><code>repeat</code></td><td><code>bool</code></td></tr><tr><td><code>callback</code></td><td><code>sig_job_fn</code></td></tr><tr><td><code>job_data</code></td><td><code>void *</code></td></tr><tr><td><code>out_job</code></td><td><code>sig_job **</code></td></tr></tbody></table><p class="doc">Schedules callback(instance, job_data) to run on instance's owning
+service's own worker thread. instance must already have been added
+to a service (sig_service_add_instance()) -- SIG_ERR_INVALID_ARG
+otherwise. See sig_service_schedule_job() in sig_service.h for the
+full contract (timing, interval floor, handle lifetime); this is a
+thin wrapper that derives the service from instance-&gt;service.</p></section>
+<section class="item" id="sig_capsule_instance_cancel"><h3>sig_capsule_instance_cancel</h3><pre>sig_status_t sig_capsule_instance_cancel(sig_capsule_instance * instance, sig_job * job)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>instance</code></td><td><code>sig_capsule_instance *</code></td></tr><tr><td><code>job</code></td><td><code>sig_job *</code></td></tr></tbody></table><p class="doc">Cancels job (previously returned by sig_capsule_instance_schedule()
+on this same instance) so it will not fire again. See
+sig_service_cancel_job() for the full contract.</p></section>
+</body></html>

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sig_loop.h - libsig reference</title><style>:root{color-scheme:light dark;--bg:#fff;--fg:#1b1f24;--mut:#59636e;--bd:#d0d7de;--code:#f6f8fa;--note:#fff8c5;--lnk:#0969da}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--mut:#9198a1;--bd:#30363d;--code:#161b22;--note:#3b2e00;--lnk:#58a6ff}}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;margin:0 auto;max-width:56rem;padding:1rem 16px 3rem}
+a{color:var(--lnk)}code,pre{font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+pre{background:var(--code);padding:.6rem .8rem;overflow-x:auto;border-radius:6px}
+.note{background:var(--note);border-left:4px solid var(--bd);padding:.5rem .8rem;margin:1rem 0;white-space:pre-wrap}
+.item{border-top:1px solid var(--bd);margin-top:1.5rem;padding-top:.5rem}
+.doc{white-space:pre-wrap;color:var(--fg)}table{border-collapse:collapse}th,td{border:1px solid var(--bd);padding:.25rem .6rem;text-align:left}
+nav{color:var(--mut)}.shared{color:var(--mut);font-size:.9em;margin:.4rem 0 0}</style></head>
+<body>
+<nav><a href="index.html">Reference index</a> / runtime / <a href="/sig-docs/architecture/">Architecture site</a></nav>
+<h1>sig_loop.h</h1>
+<p><code>include/sig/runtime/sig_loop.h</code></p>
+<div class="note">The event loop of a single-threaded host: file-descriptor watches, one-shot
+timers and a per-iteration &quot;step&quot; hook (the runtime's service step), all
+dispatched from one thread. It is built on sig_poller, so the same code runs
+over poll(), kqueue or epoll.
+
+Everything except sig_loop_wake() and sig_loop_stop() must be called on the
+thread that runs sig_loop_run() (or before it starts). Callbacks run on that
+thread and may freely add, change and remove watches and timers, including
+their own.</div>
+<section class="item" id="sig_loop"><h3>sig_loop</h3><pre>typedef struct sig_loop sig_loop;</pre></section>
+<section class="item" id="sig_loop_watch"><h3>sig_loop_watch</h3><pre>typedef struct sig_loop_watch sig_loop_watch;</pre></section>
+<section class="item" id="sig_loop_timer"><h3>sig_loop_timer</h3><pre>typedef struct sig_loop_timer sig_loop_timer;</pre></section>
+<section class="item" id="sig_loop_create"><h3>sig_loop_create</h3><pre>sig_status_t sig_loop_create(sig_loop ** out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>out</code></td><td><code>sig_loop **</code></td></tr></tbody></table></section>
+<section class="item" id="sig_loop_destroy"><h3>sig_loop_destroy</h3><pre>void sig_loop_destroy(sig_loop * loop)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>loop</code></td><td><code>sig_loop *</code></td></tr></tbody></table><p class="doc">Frees the loop and any watches and timers still registered (their fds are
+not closed). Not while sig_loop_run() is running. NULL is a no-op.</p></section>
+<section class="item" id="sig_loop_fd_fn"><h3>sig_loop_fd_fn</h3><pre>typedef void (*sig_loop_fd_fn)(int fd, unsigned events, void *ctx);</pre><p class="doc">Called when fd is ready; `events` is a SIG_POLL_* mask.</p></section>
+<section class="item" id="sig_loop_watch_fd"><h3>sig_loop_watch_fd</h3><pre>sig_status_t sig_loop_watch_fd(sig_loop * loop, int fd, unsigned events, sig_loop_fd_fn cb, void * ctx, sig_loop_watch ** out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>loop</code></td><td><code>sig_loop *</code></td></tr><tr><td><code>fd</code></td><td><code>int</code></td></tr><tr><td><code>events</code></td><td><code>unsigned</code></td></tr><tr><td><code>cb</code></td><td><code>sig_loop_fd_fn</code></td></tr><tr><td><code>ctx</code></td><td><code>void *</code></td></tr><tr><td><code>out</code></td><td><code>sig_loop_watch **</code></td></tr></tbody></table><p class="doc">Watches fd for `events` (SIG_POLL_READ / SIG_POLL_WRITE; errors are always
+reported). *out is the handle for modify/unwatch. The caller keeps ownership
+of the fd and must sig_loop_unwatch() before closing it. SIG_ERR_EXISTS if
+fd is already watched.</p></section>
+<section class="item" id="sig_loop_watch_modify"><h3>sig_loop_watch_modify</h3><pre>sig_status_t sig_loop_watch_modify(sig_loop_watch * watch, unsigned events)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>watch</code></td><td><code>sig_loop_watch *</code></td></tr><tr><td><code>events</code></td><td><code>unsigned</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_loop_watch_fd">sig_loop_watch_fd</a></p><p class="doc">Watches fd for `events` (SIG_POLL_READ / SIG_POLL_WRITE; errors are always
+reported). *out is the handle for modify/unwatch. The caller keeps ownership
+of the fd and must sig_loop_unwatch() before closing it. SIG_ERR_EXISTS if
+fd is already watched.</p></section>
+<section class="item" id="sig_loop_unwatch"><h3>sig_loop_unwatch</h3><pre>void sig_loop_unwatch(sig_loop_watch * watch)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>watch</code></td><td><code>sig_loop_watch *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_loop_watch_fd">sig_loop_watch_fd</a></p><p class="doc">Watches fd for `events` (SIG_POLL_READ / SIG_POLL_WRITE; errors are always
+reported). *out is the handle for modify/unwatch. The caller keeps ownership
+of the fd and must sig_loop_unwatch() before closing it. SIG_ERR_EXISTS if
+fd is already watched.</p></section>
+<section class="item" id="sig_loop_timer_fn"><h3>sig_loop_timer_fn</h3><pre>typedef void (*sig_loop_timer_fn)(void *ctx);</pre><p class="doc">One-shot timer: cb runs once, no earlier than `deadline` (absolute
+CLOCK_MONOTONIC, as from sig_time_now()). The handle is valid until the
+callback is entered or sig_loop_timer_cancel() is called; a holder must
+forget it in the callback.</p></section>
+<section class="item" id="sig_loop_timer_start"><h3>sig_loop_timer_start</h3><pre>sig_status_t sig_loop_timer_start(sig_loop * loop, const struct timespec * deadline, sig_loop_timer_fn cb, void * ctx, sig_loop_timer ** out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>loop</code></td><td><code>sig_loop *</code></td></tr><tr><td><code>deadline</code></td><td><code>const struct timespec *</code></td></tr><tr><td><code>cb</code></td><td><code>sig_loop_timer_fn</code></td></tr><tr><td><code>ctx</code></td><td><code>void *</code></td></tr><tr><td><code>out</code></td><td><code>sig_loop_timer **</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_loop_timer_fn">sig_loop_timer_fn</a></p><p class="doc">One-shot timer: cb runs once, no earlier than `deadline` (absolute
+CLOCK_MONOTONIC, as from sig_time_now()). The handle is valid until the
+callback is entered or sig_loop_timer_cancel() is called; a holder must
+forget it in the callback.</p></section>
+<section class="item" id="sig_loop_timer_cancel"><h3>sig_loop_timer_cancel</h3><pre>void sig_loop_timer_cancel(sig_loop_timer * timer)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>timer</code></td><td><code>sig_loop_timer *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_loop_timer_fn">sig_loop_timer_fn</a></p><p class="doc">One-shot timer: cb runs once, no earlier than `deadline` (absolute
+CLOCK_MONOTONIC, as from sig_time_now()). The handle is valid until the
+callback is entered or sig_loop_timer_cancel() is called; a holder must
+forget it in the callback.</p></section>
+<section class="item" id="sig_loop_step_fn"><h3>sig_loop_step_fn</h3><pre>typedef void (*sig_loop_step_fn)(void *ctx, bool *out_has_deadline, struct timespec *out_deadline);</pre><p class="doc">The step hook runs at the top of every iteration and reports when it next
+needs to run (*out_has_deadline false: only when woken). The host points it
+at sig_runtime_step().</p></section>
+<section class="item" id="sig_loop_set_step"><h3>sig_loop_set_step</h3><pre>void sig_loop_set_step(sig_loop * loop, sig_loop_step_fn fn, void * ctx)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>loop</code></td><td><code>sig_loop *</code></td></tr><tr><td><code>fn</code></td><td><code>sig_loop_step_fn</code></td></tr><tr><td><code>ctx</code></td><td><code>void *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_loop_step_fn">sig_loop_step_fn</a></p><p class="doc">The step hook runs at the top of every iteration and reports when it next
+needs to run (*out_has_deadline false: only when woken). The host points it
+at sig_runtime_step().</p></section>
+<section class="item" id="sig_loop_run"><h3>sig_loop_run</h3><pre>sig_status_t sig_loop_run(sig_loop * loop)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>loop</code></td><td><code>sig_loop *</code></td></tr></tbody></table><p class="doc">Runs until sig_loop_stop(): step, fire due timers, sleep until the earliest
+of the step deadline and the next timer or fd event, dispatch, repeat. A
+stop requested before the loop starts makes it return at once.</p></section>
+<section class="item" id="sig_loop_wake"><h3>sig_loop_wake</h3><pre>void sig_loop_wake(sig_loop * loop)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>loop</code></td><td><code>sig_loop *</code></td></tr></tbody></table><p class="doc">Any thread. Makes the loop run its step hook now.</p></section>
+<section class="item" id="sig_loop_stop"><h3>sig_loop_stop</h3><pre>void sig_loop_stop(sig_loop * loop)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>loop</code></td><td><code>sig_loop *</code></td></tr></tbody></table><p class="doc">Any thread. Makes sig_loop_run() return after the current iteration.</p></section>
+</body></html>

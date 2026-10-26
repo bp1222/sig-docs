@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sig_value_json.h - libsig reference</title><style>:root{color-scheme:light dark;--bg:#fff;--fg:#1b1f24;--mut:#59636e;--bd:#d0d7de;--code:#f6f8fa;--note:#fff8c5;--lnk:#0969da}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--mut:#9198a1;--bd:#30363d;--code:#161b22;--note:#3b2e00;--lnk:#58a6ff}}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;margin:0 auto;max-width:56rem;padding:1rem 16px 3rem}
+a{color:var(--lnk)}code,pre{font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+pre{background:var(--code);padding:.6rem .8rem;overflow-x:auto;border-radius:6px}
+.note{background:var(--note);border-left:4px solid var(--bd);padding:.5rem .8rem;margin:1rem 0;white-space:pre-wrap}
+.item{border-top:1px solid var(--bd);margin-top:1.5rem;padding-top:.5rem}
+.doc{white-space:pre-wrap;color:var(--fg)}table{border-collapse:collapse}th,td{border:1px solid var(--bd);padding:.25rem .6rem;text-align:left}
+nav{color:var(--mut)}.shared{color:var(--mut);font-size:.9em;margin:.4rem 0 0}</style></head>
+<body>
+<nav><a href="index.html">Reference index</a> / foundation / <a href="/sig-docs/architecture/">Architecture site</a></nav>
+<h1>sig_value_json.h</h1>
+<p><code>include/sig/value/sig_value_json.h</code></p>
+<section class="item" id="sig_value_to_json"><h3>sig_value_to_json</h3><pre>sig_status_t sig_value_to_json(const sig_value * v, char ** out, size_t * out_len)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>v</code></td><td><code>const sig_value *</code></td></tr><tr><td><code>out</code></td><td><code>char **</code></td></tr><tr><td><code>out_len</code></td><td><code>size_t *</code></td></tr></tbody></table><p class="doc">Serializes v as compact JSON. *out is a NUL-terminated heap string
+the caller must sig_free(); *out_len (nullable) excludes the NUL.
+Map keys are emitted in sorted (bytewise) order so output is
+deterministic. Non-finite doubles become null; bytes become a
+standard padded base64 string (one-way: parsing it back yields a
+string). Containers nested deeper than SIG_VALUE_MAX_DEPTH -&gt;
+SIG_ERR_INVALID_ARG. *out is untouched on error.</p></section>
+<section class="item" id="sig_value_from_json"><h3>sig_value_from_json</h3><pre>sig_status_t sig_value_from_json(const char * text, size_t len, sig_value * out)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>text</code></td><td><code>const char *</code></td></tr><tr><td><code>len</code></td><td><code>size_t</code></td></tr><tr><td><code>out</code></td><td><code>sig_value *</code></td></tr></tbody></table><p class="doc">Parses strict RFC 8259 JSON from text[0..len) (need not be
+NUL-terminated) into *out. Objects become maps (a duplicate key
+keeps the last value), arrays become lists, and a number with no
+fraction or exponent that fits sig_int_t becomes an int (any other
+number a double). \uXXXX escapes, including surrogate pairs, are
+decoded to UTF-8. Anything else -- trailing text, leading zeros,
+raw control characters in strings, null, NaN/Infinity, numbers that
+overflow a double, a NUL (\u0000) in an object key, nesting beyond
+SIG_VALUE_MAX_DEPTH -- is SIG_ERR_PARSE. SIG_ERR_ALLOC on allocation
+failure. *out is untouched on error and nothing leaks. The caller
+owns the result and must sig_value_dtor() it.</p></section>
+</body></html>

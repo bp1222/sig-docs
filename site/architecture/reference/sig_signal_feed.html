@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sig_signal_feed.h - libsig reference</title><style>:root{color-scheme:light dark;--bg:#fff;--fg:#1b1f24;--mut:#59636e;--bd:#d0d7de;--code:#f6f8fa;--note:#fff8c5;--lnk:#0969da}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--mut:#9198a1;--bd:#30363d;--code:#161b22;--note:#3b2e00;--lnk:#58a6ff}}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;margin:0 auto;max-width:56rem;padding:1rem 16px 3rem}
+a{color:var(--lnk)}code,pre{font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+pre{background:var(--code);padding:.6rem .8rem;overflow-x:auto;border-radius:6px}
+.note{background:var(--note);border-left:4px solid var(--bd);padding:.5rem .8rem;margin:1rem 0;white-space:pre-wrap}
+.item{border-top:1px solid var(--bd);margin-top:1.5rem;padding-top:.5rem}
+.doc{white-space:pre-wrap;color:var(--fg)}table{border-collapse:collapse}th,td{border:1px solid var(--bd);padding:.25rem .6rem;text-align:left}
+nav{color:var(--mut)}.shared{color:var(--mut);font-size:.9em;margin:.4rem 0 0}</style></head>
+<body>
+<nav><a href="index.html">Reference index</a> / feed / <a href="/sig-docs/architecture/">Architecture site</a></nav>
+<h1>sig_signal_feed.h</h1>
+<p><code>include/sig/feed/sig_signal_feed.h</code></p>
+<section class="item" id="macro-SIG_SIGNAL_FEED_MODULE_NAME"><h3>SIG_SIGNAL_FEED_MODULE_NAME</h3><pre>#define SIG_SIGNAL_FEED_MODULE_NAME &quot;signal_feed&quot;</pre><p class="doc">The live signal feed: streams the signals crossing chosen capsule terminals
+to WebSocket clients, as JSON text frames, on path &quot;/feed&quot; of the shared HTTP
+server (sig_http_server.h; same address and port as the REST API).
+
+SECURITY: the feed is UNAUTHENTICATED. The only check is the Origin header,
+done by the HTTP server (its cors_origin setting). Anyone who can reach the
+port can read live signal data of every terminal. Authentication is required
+before this ships; do not expose the port to untrusted networks.
+
+Register after sig_http_server_module() (and after sig_mgmt_http_module(),
+so the REST routes exist first); without the http server the runtime's start
+fails with SIG_ERR_NOT_FOUND. The module takes no config (NULL or &quot;&quot;; anything
+else is SIG_ERR_INVALID_ARG).
+
+Wire protocol (text frames, JSON):
+  client: {&quot;op&quot;:&quot;subscribe&quot;,&quot;id&quot;:&quot;&lt;client string&gt;&quot;,&quot;service&quot;:&quot;S&quot;,&quot;instance&quot;:&quot;I&quot;,&quot;terminal&quot;:&quot;T&quot;}
+          {&quot;op&quot;:&quot;unsubscribe&quot;,&quot;id&quot;:&quot;&lt;client string&gt;&quot;}
+  server: {&quot;op&quot;:&quot;subscribed&quot;,&quot;id&quot;:&quot;X&quot;,&quot;dir&quot;:&quot;in|out&quot;}
+          {&quot;op&quot;:&quot;error&quot;,&quot;id&quot;:&quot;X&quot;,&quot;error&quot;:&quot;bad_request|not_found|too_many&quot;}  (id omitted if absent)
+          {&quot;op&quot;:&quot;signal&quot;,&quot;id&quot;:&quot;X&quot;,&quot;seq&quot;:N,&quot;t&quot;:&lt;unix ms&gt;,&quot;type&quot;:&quot;...&quot;,&quot;value&quot;:&lt;json&gt;}
+          {&quot;op&quot;:&quot;dropped&quot;,&quot;id&quot;:&quot;X&quot;,&quot;count&quot;:N}
+Subscriptions see only signals from the moment they are made (no history) and
+are keyed by names, so they survive a restart of the service. Limits: 8
+connections (the 9th is closed with close code 1013), 16 subscriptions per
+connection (the 17th gets &quot;too_many&quot;), 4096 bytes per client frame, 1 MiB of
+unsent data per connection (beyond which signals are dropped and counted).
+Malformed frames close the connection with 1002 (protocol) or 1009 (too
+large); an invalid command gets an &quot;error&quot; reply and the connection stays.
+
+Threading: with a loop on the runtime (sig_runtime_set_loop) everything runs
+on that loop's thread; otherwise the module runs a private loop on one
+thread. The signal tap never blocks the emitting thread: when a subscription's
+queue is full, signals are dropped and counted.</p></section>
+<section class="item" id="sig_signal_feed_module"><h3>sig_signal_feed_module</h3><pre>const sig_runtime_module * sig_signal_feed_module()</pre></section>
+</body></html>

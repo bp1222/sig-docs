@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sig_expr.h - libsig reference</title><style>:root{color-scheme:light dark;--bg:#fff;--fg:#1b1f24;--mut:#59636e;--bd:#d0d7de;--code:#f6f8fa;--note:#fff8c5;--lnk:#0969da}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--mut:#9198a1;--bd:#30363d;--code:#161b22;--note:#3b2e00;--lnk:#58a6ff}}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;margin:0 auto;max-width:56rem;padding:1rem 16px 3rem}
+a{color:var(--lnk)}code,pre{font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+pre{background:var(--code);padding:.6rem .8rem;overflow-x:auto;border-radius:6px}
+.note{background:var(--note);border-left:4px solid var(--bd);padding:.5rem .8rem;margin:1rem 0;white-space:pre-wrap}
+.item{border-top:1px solid var(--bd);margin-top:1.5rem;padding-top:.5rem}
+.doc{white-space:pre-wrap;color:var(--fg)}table{border-collapse:collapse}th,td{border:1px solid var(--bd);padding:.25rem .6rem;text-align:left}
+nav{color:var(--mut)}.shared{color:var(--mut);font-size:.9em;margin:.4rem 0 0}</style></head>
+<body>
+<nav><a href="index.html">Reference index</a> / foundation / <a href="/sig-docs/architecture/">Architecture site</a></nav>
+<h1>sig_expr.h</h1>
+<p><code>include/sig/value/sig_expr.h</code></p>
+<section class="item" id="sig_expr"><h3>sig_expr</h3><pre>typedef struct sig_expr sig_expr;</pre><p class="doc">A small condition language evaluated against a sig_value.
+
+  input % 2 == 0
+  input.reading.temp &gt; 21.5 &amp;&amp; input.status != &quot;off&quot;
+  input.subvalue ~ &quot;failure&quot;
+  input.items[0] &gt;= 10
+
+The one variable is `input`, the value being tested. Literals are
+integers, decimals, &quot;double&quot; or 'single' quoted strings (escapes \\ \&quot;
+\' \n \t), and true / false. Operators, loosest binding first:
+
+  ||
+  &amp;&amp;
+  == !=
+  &lt; &lt;= &gt; &gt;= ~       (a ~ b: string a contains string b)
+  + -
+  * / %
+  ! -               (unary)
+  .key  [n]  [&quot;key&quot;]   (postfix: map member, list element, map member)
+
+Integers and decimals mix freely (the operation is done in decimals if
+either side is one); integer arithmetic wraps; % is integers only.
+Strings compare by bytes.
+
+An expression that cannot be evaluated against a particular input --
+a missing key, an index out of range, operands of the wrong type,
+division by zero -- has no value. &quot;No value&quot; spreads through an
+operator, except that a false operand of &amp;&amp; (or a true operand of ||)
+decides the result whatever the other side is. sig_expr_eval_bool() reports it as SIG_ERR_TYPE_MISMATCH
+so a caller can tell &quot;false&quot; from &quot;could not be decided&quot;.
+
+A compiled sig_expr is immutable; evaluating it allocates nothing and
+is safe from several threads at once.</p></section>
+<section class="item" id="sig_expr_compile"><h3>sig_expr_compile</h3><pre>sig_status_t sig_expr_compile(const char * src, sig_expr ** out, char * err, size_t err_cap)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>src</code></td><td><code>const char *</code></td></tr><tr><td><code>out</code></td><td><code>sig_expr **</code></td></tr><tr><td><code>err</code></td><td><code>char *</code></td></tr><tr><td><code>err_cap</code></td><td><code>size_t</code></td></tr></tbody></table><p class="doc">Compiles src. On failure returns SIG_ERR_PARSE (or SIG_ERR_ALLOC /
+SIG_ERR_INVALID_ARG) and, when err is non-NULL, copies a message such
+as &quot;col 7: expected ')'&quot; (truncated) into err[0..err_cap).</p></section>
+<section class="item" id="sig_expr_destroy"><h3>sig_expr_destroy</h3><pre>void sig_expr_destroy(sig_expr * expr)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>expr</code></td><td><code>sig_expr *</code></td></tr></tbody></table><p class="shared">shared with <a href="#sig_expr_compile">sig_expr_compile</a></p><p class="doc">Compiles src. On failure returns SIG_ERR_PARSE (or SIG_ERR_ALLOC /
+SIG_ERR_INVALID_ARG) and, when err is non-NULL, copies a message such
+as &quot;col 7: expected ')'&quot; (truncated) into err[0..err_cap).</p></section>
+<section class="item" id="sig_expr_eval_bool"><h3>sig_expr_eval_bool</h3><pre>sig_status_t sig_expr_eval_bool(const sig_expr * expr, const sig_value * input, bool * result)</pre><table><thead><tr><th>Parameter</th><th>Type</th></tr></thead><tbody><tr><td><code>expr</code></td><td><code>const sig_expr *</code></td></tr><tr><td><code>input</code></td><td><code>const sig_value *</code></td></tr><tr><td><code>result</code></td><td><code>bool *</code></td></tr></tbody></table><p class="doc">SIG_OK with *result set, or SIG_ERR_TYPE_MISMATCH when the expression has no
+boolean value for this input (including a final value that is not a
+boolean). *result is false in that case.</p></section>
+</body></html>

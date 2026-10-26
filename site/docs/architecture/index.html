@@ -1,0 +1,626 @@
+<!DOCTYPE html><html lang="en" dir="ltr" data-theme="dark" data-has-toc data-has-sidebar class="astro-jggehc4m"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Architecture | libsig</title><link rel="canonical" href="https://bp1222.github.io/sig-docs/docs/architecture/"/><link rel="sitemap" href="/sig-docs/sitemap-index.xml"/><link rel="shortcut icon" href="/sig-docs/favicon.svg" type="image/svg+xml"/><meta name="generator" content="Astro v7.4.2"/><meta name="generator" content="Starlight v0.42.7"/><meta property="og:title" content="Architecture"/><meta property="og:type" content="article"/><meta property="og:url" content="https://bp1222.github.io/sig-docs/docs/architecture/"/><meta property="og:locale" content="en"/><meta property="og:site_name" content="libsig"/><meta name="twitter:card" content="summary_large_image"/><script>
+	window.StarlightThemeProvider = (() => {
+		const storedTheme =
+			typeof localStorage !== 'undefined' && localStorage.getItem('starlight-theme');
+		const theme =
+			storedTheme ||
+			(window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+		document.documentElement.dataset.theme = theme === 'light' ? 'light' : 'dark';
+		return {
+			updatePickers(theme = storedTheme || 'auto') {
+				document.querySelectorAll('starlight-theme-select').forEach((picker) => {
+					const select = picker.querySelector('select');
+					if (select) select.value = theme;
+					/** @type {HTMLTemplateElement | null} */
+					const tmpl = document.querySelector(`#theme-icons`);
+					const newIcon = tmpl && tmpl.content.querySelector('.' + theme);
+					if (newIcon) {
+						const oldIcon = picker.querySelector('svg.label-icon');
+						if (oldIcon) {
+							oldIcon.replaceChildren(...newIcon.cloneNode(true).childNodes);
+						}
+					}
+				});
+			},
+		};
+	})();
+</script><template id="theme-icons"><svg aria-hidden="true" class="light astro-iqzfzszr" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M5 12a1 1 0 0 0-1-1H3a1 1 0 0 0 0 2h1a1 1 0 0 0 1-1Zm.64 5-.71.71a1 1 0 0 0 0 1.41 1 1 0 0 0 1.41 0l.71-.71A1 1 0 0 0 5.64 17ZM12 5a1 1 0 0 0 1-1V3a1 1 0 0 0-2 0v1a1 1 0 0 0 1 1Zm5.66 2.34a1 1 0 0 0 .7-.29l.71-.71a1 1 0 1 0-1.41-1.41l-.66.71a1 1 0 0 0 0 1.41 1 1 0 0 0 .66.29Zm-12-.29a1 1 0 0 0 1.41 0 1 1 0 0 0 0-1.41l-.71-.71a1.004 1.004 0 1 0-1.43 1.41l.73.71ZM21 11h-1a1 1 0 0 0 0 2h1a1 1 0 0 0 0-2Zm-2.64 6A1 1 0 0 0 17 18.36l.71.71a1 1 0 0 0 1.41 0 1 1 0 0 0 0-1.41l-.76-.66ZM12 6.5a5.5 5.5 0 1 0 5.5 5.5A5.51 5.51 0 0 0 12 6.5Zm0 9a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Zm0 3.5a1 1 0 0 0-1 1v1a1 1 0 0 0 2 0v-1a1 1 0 0 0-1-1Z"/></svg><svg aria-hidden="true" class="dark astro-iqzfzszr" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M21.64 13a1 1 0 0 0-1.05-.14 8.049 8.049 0 0 1-3.37.73 8.15 8.15 0 0 1-8.14-8.1 8.59 8.59 0 0 1 .25-2A1 1 0 0 0 8 2.36a10.14 10.14 0 1 0 14 11.69 1 1 0 0 0-.36-1.05Zm-9.5 6.69A8.14 8.14 0 0 1 7.08 5.22v.27a10.15 10.15 0 0 0 10.14 10.14 9.784 9.784 0 0 0 2.1-.22 8.11 8.11 0 0 1-7.18 4.32v-.04Z"/></svg><svg aria-hidden="true" class="auto astro-iqzfzszr" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M21 14h-1V7a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v7H3a1 1 0 0 0-1 1v2a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-2a1 1 0 0 0-1-1ZM6 7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7H6V7Zm14 10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-1h16v1Z"/></svg></template><link rel="stylesheet" href="/sig-docs/_astro/print.ehPL0gv-.css" media="print"><link rel="stylesheet" href="/sig-docs/_astro/common.CJalqx7G.css"><style>@layer starlight.components{svg:where(.astro-iqzfzszr){color:var(--sl-icon-color);font-size:var(--sl-icon-size,1em);width:1em;height:1em;overflow:visible}.sl-link-button:where(.astro-aeodkf5g){font-size:var(--sl-text-sm);outline-offset:.25rem;border:1px solid #0000;border-radius:999rem;align-items:center;gap:.5em;padding:.4375rem 1.125rem;line-height:1.1875;text-decoration:none;display:inline-flex}.sl-link-button:where(.astro-aeodkf5g).primary{background:var(--sl-color-text-accent);border-color:var(--sl-color-text-accent);color:var(--sl-color-black)}.sl-link-button:where(.astro-aeodkf5g).primary:hover{color:var(--sl-color-black)}.sl-link-button:where(.astro-aeodkf5g).secondary{border-color:inherit;color:var(--sl-color-white)}.sl-link-button:where(.astro-aeodkf5g).minimal{color:var(--sl-color-white);padding-inline:0}.sl-link-button:where(.astro-aeodkf5g) svg{flex-shrink:0}@media (width>=50rem){.sl-link-button:where(.astro-aeodkf5g){font-size:var(--sl-text-base);padding:.9375rem 1.25rem}}.sl-markdown-content .sl-link-button:where(.astro-aeodkf5g){margin-inline-end:1rem}.sl-markdown-content .sl-link-button:where(.astro-aeodkf5g):not(:where(p *)){margin-block:1rem}}
+</style><script type="module" src="/sig-docs/_astro/page.BcLrd6h2.js"></script></head><body class="astro-jggehc4m"><a class="sl-skip-link astro-x6bj46fa" href="#_top">Skip to content</a><div class="page sl-flex astro-b647w3tw"><header class="header astro-b647w3tw"><div class="header astro-ga32ne5v"><div class="title-wrapper sl-flex astro-ga32ne5v"><a href="/sig-docs/" class="site-title sl-flex astro-rqsmjufu"><span class="astro-rqsmjufu" translate="no">libsig</span></a></div><div class="sl-flex print:hidden astro-ga32ne5v"><site-search class="astro-ga32ne5v astro-hbri7ndq" data-translations="{&quot;placeholder&quot;:&quot;Search&quot;}"><button data-open-modal disabled aria-label="Search" aria-keyshortcuts="Control+K" class="astro-hbri7ndq"><svg aria-hidden="true" class="astro-hbri7ndq astro-iqzfzszr" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M21.71 20.29 18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a.999.999 0 0 0 1.42 0 1 1 0 0 0 0-1.39ZM11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14Z"/></svg><span class="sl-hidden md:sl-block astro-hbri7ndq" aria-hidden="true">Search</span><kbd class="sl-hidden md:sl-flex astro-hbri7ndq" style="display: none;"><kbd class="astro-hbri7ndq">Ctrl</kbd><kbd class="astro-hbri7ndq">K</kbd></kbd></button><dialog style="padding:0" aria-label="Search" class="astro-hbri7ndq"><div class="dialog-frame sl-flex astro-hbri7ndq"><button data-close-modal class="sl-flex md:sl-hidden astro-hbri7ndq">Cancel</button><div class="search-container astro-hbri7ndq"><div id="starlight__search" class="astro-hbri7ndq"></div></div></div></dialog></site-search><script>
+	(() => {
+		const openBtn = document.querySelector('button[data-open-modal]');
+		const shortcut = openBtn?.querySelector('kbd');
+		if (!openBtn || !(shortcut instanceof HTMLElement)) return;
+		const platformKey = shortcut.querySelector('kbd');
+		if (platformKey && /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform)) {
+			platformKey.textContent = '⌘';
+			openBtn.setAttribute('aria-keyshortcuts', 'Meta+K');
+		}
+		shortcut.style.display = '';
+	})();
+</script><script type="module" src="/sig-docs/_astro/Search.astro_astro_type_script_index_0_lang.B7P822Hx.js"></script></div><div class="sl-hidden md:sl-flex print:hidden right-group astro-ga32ne5v"><div class="sl-flex social-icons astro-ga32ne5v"><a href="https://github.com/bp1222/sig" rel="me" class="sl-flex astro-n2ko6rij"><span class="sr-only astro-n2ko6rij">GitHub</span><svg aria-hidden="true" class="astro-n2ko6rij astro-iqzfzszr" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.57L9 21.07c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.08-.74.09-.73.09-.73 1.2.09 1.83 1.24 1.83 1.24 1.08 1.83 2.81 1.3 3.5 1 .1-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.24 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.8 5.63-5.48 5.92.42.36.81 1.1.81 2.22l-.01 3.29c0 .31.2.69.82.57A12 12 0 0 0 12 .3Z"/></svg></a></div><starlight-theme-select><label style="--sl-select-width: 6.25em" class="astro-nruzlxdn"><span class="sr-only astro-nruzlxdn">Select theme</span><svg aria-hidden="true" class="icon label-icon astro-nruzlxdn astro-iqzfzszr" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M21 14h-1V7a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v7H3a1 1 0 0 0-1 1v2a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-2a1 1 0 0 0-1-1ZM6 7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7H6V7Zm14 10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-1h16v1Z"/></svg><select autocomplete="off" class="astro-nruzlxdn"><option value="dark" class="astro-nruzlxdn">Dark</option><option value="light" class="astro-nruzlxdn">Light</option><option value="auto" selected class="astro-nruzlxdn">Auto</option></select><svg aria-hidden="true" class="icon caret astro-nruzlxdn astro-iqzfzszr" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M17 9.17a1 1 0 0 0-1.41 0L12 12.71 8.46 9.17a1 1 0 1 0-1.41 1.42l4.24 4.24a1.002 1.002 0 0 0 1.42 0L17 10.59a1.002 1.002 0 0 0 0-1.42Z"/></svg></label></starlight-theme-select><script>
+	StarlightThemeProvider.updatePickers();
+</script><script type="module">var e=`starlight-theme`,t=e=>e===`auto`||e===`dark`||e===`light`?e:`auto`,n=()=>t(typeof localStorage<`u`&&localStorage.getItem(e));function r(t){typeof localStorage<`u`&&localStorage.setItem(e,t===`light`||t===`dark`?t:``)}var i=()=>matchMedia(`(prefers-color-scheme: light)`).matches?`light`:`dark`;function a(e){StarlightThemeProvider.updatePickers(e),document.documentElement.dataset.theme=e===`auto`?i():e,r(e)}matchMedia(`(prefers-color-scheme: light)`).addEventListener(`change`,()=>{n()===`auto`&&a(`auto`)});var o=class extends HTMLElement{constructor(){super(),a(n()),this.querySelector(`select`)?.addEventListener(`change`,e=>{e.currentTarget instanceof HTMLSelectElement&&a(t(e.currentTarget.value))})}};customElements.define(`starlight-theme-select`,o);</script><script type="module">var e=class extends HTMLElement{constructor(){super();let e=this.querySelector(`select`);e&&(e.addEventListener(`change`,e=>{e.currentTarget instanceof HTMLSelectElement&&(window.location.pathname=e.currentTarget.value)}),window.addEventListener(`pageshow`,t=>{if(!t.persisted)return;let n=e.querySelector(`option[selected]`)?.index;n!==e.selectedIndex&&(e.selectedIndex=n??0)}))}};customElements.define(`starlight-lang-select`,e);</script></div></div></header><nav class="sidebar print:hidden astro-b647w3tw" aria-label="Main"><button popovertarget="starlight__sidebar" class="sl-menu-button sl-flex md:sl-hidden print:hidden astro-5rk2kjyq"><svg aria-hidden="true" class="open-menu astro-5rk2kjyq astro-iqzfzszr" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M3 8h18a1 1 0 1 0 0-2H3a1 1 0 0 0 0 2Zm18 8H3a1 1 0 0 0 0 2h18a1 1 0 0 0 0-2Zm0-5H3a1 1 0 0 0 0 2h18a1 1 0 0 0 0-2Z"/></svg><svg aria-hidden="true" class="close-menu astro-5rk2kjyq astro-iqzfzszr" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="m13.41 12 6.3-6.29a1.004 1.004 0 1 0-1.42-1.42L12 10.59l-6.29-6.3a1.004 1.004 0 0 0-1.42 1.42l6.3 6.29-6.3 6.29a1 1 0 0 0 0 1.42.998.998 0 0 0 1.42 0l6.29-6.3 6.29 6.3a.999.999 0 0 0 1.42 0 1 1 0 0 0 0-1.42L13.41 12Z"/></svg><span class="sr-only astro-5rk2kjyq">Menu</span></button><script type="module">var e=class extends HTMLElement{constructor(){super();let e=matchMedia(`(min-width: 50em)`),t=()=>{this.popover=e.matches?null:`auto`};t(),e.addEventListener(`change`,()=>t()),this.addEventListener(`toggle`,({newState:e})=>this.trapFocus(e===`open`))}trapFocus(e){document.querySelectorAll(`.main-frame, .sl-skip-link`).forEach(t=>{t.toggleAttribute(`inert`,e)})}};customElements.define(`sl-sidebar-pane`,e);</script><sl-sidebar-pane popover id="starlight__sidebar" class="sidebar-pane astro-b647w3tw"><div class="sidebar-content sl-flex astro-b647w3tw"><sl-sidebar-state-persist data-hash="0bogmzt" class="astro-mld2kpnh"><script aria-hidden="true">
+		(() => {
+			try {
+				if (!matchMedia('(min-width: 50em)').matches) return;
+				/** @type {HTMLElement | null} */
+				const target = document.querySelector('sl-sidebar-state-persist');
+				const state = JSON.parse(sessionStorage.getItem('sl-sidebar-state') || '0');
+				if (!target || !state || target.dataset.hash !== state.hash) return;
+				window._starlightScrollRestore = state.scroll;
+				customElements.define(
+					'sl-sidebar-restore',
+					class SidebarRestore extends HTMLElement {
+						connectedCallback() {
+							try {
+								const idx = parseInt(this.dataset.index || '');
+								const details = this.closest('details');
+								if (details && typeof state.open[idx] === 'boolean') details.open = state.open[idx];
+							} catch {}
+						}
+					}
+				);
+			} catch {}
+		})();
+	</script><ul class="top-level astro-5kvf2hqp"><li class="astro-5kvf2hqp"><details open class="astro-5kvf2hqp"><summary class="astro-5kvf2hqp"><span class="group-label astro-5kvf2hqp"><span class="large astro-5kvf2hqp">Start here</span></span><svg aria-hidden="true" class="caret astro-5kvf2hqp astro-iqzfzszr" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1.25rem;"><path d="m14.83 11.29-4.24-4.24a1 1 0 1 0-1.42 1.41L12.71 12l-3.54 3.54a1 1 0 0 0 0 1.41 1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.24-4.24a1.002 1.002 0 0 0 0-1.42Z"/></svg></summary><sl-sidebar-restore data-index="0"></sl-sidebar-restore><ul class="astro-5kvf2hqp"></ul></details></li><li class="astro-5kvf2hqp"><details open class="astro-5kvf2hqp"><summary class="astro-5kvf2hqp"><span class="group-label astro-5kvf2hqp"><span class="large astro-5kvf2hqp">Guides</span></span><svg aria-hidden="true" class="caret astro-5kvf2hqp astro-iqzfzszr" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1.25rem;"><path d="m14.83 11.29-4.24-4.24a1 1 0 1 0-1.42 1.41L12.71 12l-3.54 3.54a1 1 0 0 0 0 1.41 1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.24-4.24a1.002 1.002 0 0 0 0-1.42Z"/></svg></summary><sl-sidebar-restore data-index="1"></sl-sidebar-restore><ul class="astro-5kvf2hqp"><li class="astro-5kvf2hqp"><a href="/sig-docs/docs/configuration/" class="astro-5kvf2hqp"><span class="astro-5kvf2hqp">Project configuration</span></a></li><li class="astro-5kvf2hqp"><a href="/sig-docs/docs/examples/" class="astro-5kvf2hqp"><span class="astro-5kvf2hqp">Examples</span></a></li><li class="astro-5kvf2hqp"><a href="/sig-docs/docs/writing-capsules/" class="astro-5kvf2hqp"><span class="astro-5kvf2hqp">Writing capsules</span></a></li></ul></details></li><li class="astro-5kvf2hqp"><details open class="astro-5kvf2hqp"><summary class="astro-5kvf2hqp"><span class="group-label astro-5kvf2hqp"><span class="large astro-5kvf2hqp">Reference</span></span><svg aria-hidden="true" class="caret astro-5kvf2hqp astro-iqzfzszr" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1.25rem;"><path d="m14.83 11.29-4.24-4.24a1 1 0 1 0-1.42 1.41L12.71 12l-3.54 3.54a1 1 0 0 0 0 1.41 1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.24-4.24a1.002 1.002 0 0 0 0-1.42Z"/></svg></summary><sl-sidebar-restore data-index="2"></sl-sidebar-restore><ul class="astro-5kvf2hqp"><li class="astro-5kvf2hqp"><a href="/sig-docs/docs/management-api/" class="astro-5kvf2hqp"><span class="astro-5kvf2hqp">Management API (sig_mgmt)</span></a></li><li class="astro-5kvf2hqp"><a href="/sig-docs/docs/rest-api/" class="astro-5kvf2hqp"><span class="astro-5kvf2hqp">Management REST API</span></a></li><li class="astro-5kvf2hqp"><a href="/sig-docs/docs/signal-feed/" class="astro-5kvf2hqp"><span class="astro-5kvf2hqp">Live signal feed</span></a></li></ul></details></li><li class="astro-5kvf2hqp"><details open class="astro-5kvf2hqp"><summary class="astro-5kvf2hqp"><span class="group-label astro-5kvf2hqp"><span class="large astro-5kvf2hqp">Concepts</span></span><svg aria-hidden="true" class="caret astro-5kvf2hqp astro-iqzfzszr" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1.25rem;"><path d="m14.83 11.29-4.24-4.24a1 1 0 1 0-1.42 1.41L12.71 12l-3.54 3.54a1 1 0 0 0 0 1.41 1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.24-4.24a1.002 1.002 0 0 0 0-1.42Z"/></svg></summary><sl-sidebar-restore data-index="3"></sl-sidebar-restore><ul class="astro-5kvf2hqp"><li class="astro-5kvf2hqp"><a href="/sig-docs/docs/architecture/" aria-current="page" class="astro-5kvf2hqp"><span class="astro-5kvf2hqp">Architecture</span></a></li></ul></details></li><li class="astro-5kvf2hqp"><a href="/sig-docs/architecture/" class="large astro-5kvf2hqp"><span class="astro-5kvf2hqp">Architecture</span></a></li><li class="astro-5kvf2hqp"><a href="/sig-docs/architecture/reference/" class="large astro-5kvf2hqp"><span class="astro-5kvf2hqp">API reference</span></a></li></ul><script aria-hidden="true">
+		(() => {
+			const scroller = document.getElementById('starlight__sidebar');
+			if (!window._starlightScrollRestore || !scroller) return;
+			scroller.scrollTop = window._starlightScrollRestore;
+			delete window._starlightScrollRestore;
+		})();
+	</script></sl-sidebar-state-persist><div class="md:sl-hidden"><div class="mobile-preferences sl-flex astro-q5jg2lio"><div class="social-icons astro-q5jg2lio"><a href="https://github.com/bp1222/sig" rel="me" class="sl-flex astro-n2ko6rij"><span class="sr-only astro-n2ko6rij">GitHub</span><svg aria-hidden="true" class="astro-n2ko6rij astro-iqzfzszr" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.57L9 21.07c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.08-.74.09-.73.09-.73 1.2.09 1.83 1.24 1.83 1.24 1.08 1.83 2.81 1.3 3.5 1 .1-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.24 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.8 5.63-5.48 5.92.42.36.81 1.1.81 2.22l-.01 3.29c0 .31.2.69.82.57A12 12 0 0 0 12 .3Z"/></svg></a></div><starlight-theme-select><label style="--sl-select-width: 6.25em" class="astro-nruzlxdn"><span class="sr-only astro-nruzlxdn">Select theme</span><svg aria-hidden="true" class="icon label-icon astro-nruzlxdn astro-iqzfzszr" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M21 14h-1V7a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v7H3a1 1 0 0 0-1 1v2a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-2a1 1 0 0 0-1-1ZM6 7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7H6V7Zm14 10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-1h16v1Z"/></svg><select autocomplete="off" class="astro-nruzlxdn"><option value="dark" class="astro-nruzlxdn">Dark</option><option value="light" class="astro-nruzlxdn">Light</option><option value="auto" selected class="astro-nruzlxdn">Auto</option></select><svg aria-hidden="true" class="icon caret astro-nruzlxdn astro-iqzfzszr" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1em;"><path d="M17 9.17a1 1 0 0 0-1.41 0L12 12.71 8.46 9.17a1 1 0 1 0-1.41 1.42l4.24 4.24a1.002 1.002 0 0 0 1.42 0L17 10.59a1.002 1.002 0 0 0 0-1.42Z"/></svg></label></starlight-theme-select><script>
+	StarlightThemeProvider.updatePickers();
+</script></div></div></div></sl-sidebar-pane></nav><div class="main-frame astro-b647w3tw"><script type="module">var e=document.getElementById(`starlight__sidebar`),t=e?.querySelector(`sl-sidebar-state-persist`),n=`sl-sidebar-state`,r=()=>{let r=[],i=t?.dataset.hash||``;try{let e=sessionStorage.getItem(n),t=JSON.parse(e||`{}`);Array.isArray(t.open)&&t.hash===i&&(r=t.open)}catch{}return{hash:i,open:r,scroll:e?.scrollTop||0}},i=e=>{try{sessionStorage.setItem(n,JSON.stringify(e))}catch{}},a=()=>i(r()),o=(e,t)=>{let n=r();n.open[t]=e,i(n)};t?.addEventListener(`click`,e=>{if(!(e.target instanceof Element))return;let t=e.target.closest(`summary`)?.closest(`details`);if(!t)return;let n=t.querySelector(`sl-sidebar-restore`),r=parseInt(n?.dataset.index||``);isNaN(r)||o(!t.open,r)}),addEventListener(`visibilitychange`,()=>{document.visibilityState===`hidden`&&a()});</script><div class="lg:sl-flex astro-ewuxxueg"><aside class="right-sidebar-container print:hidden astro-ewuxxueg"><div class="right-sidebar astro-ewuxxueg"><div class="lg:sl-hidden astro-qunufiz6"><mobile-starlight-toc data-min-h="2" data-max-h="3" class="astro-4v7x645v"><nav aria-labelledby="starlight__on-this-page--mobile" class="astro-4v7x645v"><details id="starlight__mobile-toc" class="astro-4v7x645v"><summary id="starlight__on-this-page--mobile" class="sl-flex astro-4v7x645v"><span class="toggle sl-flex astro-4v7x645v">On this page<svg aria-hidden="true" class="caret astro-4v7x645v astro-iqzfzszr" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1rem;"><path d="m14.83 11.29-4.24-4.24a1 1 0 1 0-1.42 1.41L12.71 12l-3.54 3.54a1 1 0 0 0 0 1.41 1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.24-4.24a1.002 1.002 0 0 0 0-1.42Z"/></svg></span><span class="display-current astro-4v7x645v"></span></summary><div class="dropdown astro-4v7x645v"><ul class="isMobile astro-nehgavbu" style="--depth: 0;"><li style="--depth: 0;" class="astro-nehgavbu"><a href="#_top" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Overview</span></a></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#concepts" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Concepts</span></a><ul class="isMobile astro-nehgavbu" style="--depth: 1;"><li style="--depth: 1;" class="astro-nehgavbu"><a href="#naming" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">Naming</span></a></li></ul></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#system-at-a-glance" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">System at a glance</span></a></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#layering" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Layering</span></a></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#data-flow" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Data flow</span></a><ul class="isMobile astro-nehgavbu" style="--depth: 1;"><li style="--depth: 1;" class="astro-nehgavbu"><a href="#scheduling" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">Scheduling</span></a></li><li style="--depth: 1;" class="astro-nehgavbu"><a href="#values" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">Values</span></a></li></ul></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#lifecycle" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Lifecycle</span></a><ul class="isMobile astro-nehgavbu" style="--depth: 1;"><li style="--depth: 1;" class="astro-nehgavbu"><a href="#runtime-state-machine" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">Runtime state machine</span></a></li><li style="--depth: 1;" class="astro-nehgavbu"><a href="#host-boot-sequence-sig_host_run" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">Host boot sequence (sig_host_run)</span></a></li><li style="--depth: 1;" class="astro-nehgavbu"><a href="#service-lifecycle" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">Service lifecycle</span></a></li><li style="--depth: 1;" class="astro-nehgavbu"><a href="#editing-and-the-dirty-flag" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">Editing and the dirty flag</span></a></li><li style="--depth: 1;" class="astro-nehgavbu"><a href="#runtime-modules" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">Runtime modules</span></a></li></ul></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#ownership" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Ownership</span></a></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#threading-model" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Threading model</span></a><ul class="isMobile astro-nehgavbu" style="--depth: 1;"><li style="--depth: 1;" class="astro-nehgavbu"><a href="#the-signal-tap" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">The signal tap</span></a></li><li style="--depth: 1;" class="astro-nehgavbu"><a href="#single-threaded-operation" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">Single-threaded operation</span></a></li></ul></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#management-subsystem" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Management subsystem</span></a></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#web-ui" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Web UI</span></a></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#persistence" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Persistence</span></a></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#error-handling" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Error handling</span></a></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#repository-map" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Repository map</span></a></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#extension-points" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Extension points</span></a></li></ul></div></details></nav></mobile-starlight-toc><script type="module" src="/sig-docs/_astro/MobileTableOfContents.astro_astro_type_script_index_0_lang.C3fM4Kra.js"></script></div><div class="right-sidebar-panel sl-hidden lg:sl-block astro-qunufiz6"><div class="sl-container astro-qunufiz6"><starlight-toc data-min-h="2" data-max-h="3"><nav aria-labelledby="starlight__on-this-page"><h2 id="starlight__on-this-page">On this page</h2><ul class="astro-nehgavbu" style="--depth: 0;"><li style="--depth: 0;" class="astro-nehgavbu"><a href="#_top" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Overview</span></a></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#concepts" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Concepts</span></a><ul class="astro-nehgavbu" style="--depth: 1;"><li style="--depth: 1;" class="astro-nehgavbu"><a href="#naming" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">Naming</span></a></li></ul></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#system-at-a-glance" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">System at a glance</span></a></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#layering" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Layering</span></a></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#data-flow" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Data flow</span></a><ul class="astro-nehgavbu" style="--depth: 1;"><li style="--depth: 1;" class="astro-nehgavbu"><a href="#scheduling" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">Scheduling</span></a></li><li style="--depth: 1;" class="astro-nehgavbu"><a href="#values" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">Values</span></a></li></ul></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#lifecycle" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Lifecycle</span></a><ul class="astro-nehgavbu" style="--depth: 1;"><li style="--depth: 1;" class="astro-nehgavbu"><a href="#runtime-state-machine" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">Runtime state machine</span></a></li><li style="--depth: 1;" class="astro-nehgavbu"><a href="#host-boot-sequence-sig_host_run" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">Host boot sequence (sig_host_run)</span></a></li><li style="--depth: 1;" class="astro-nehgavbu"><a href="#service-lifecycle" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">Service lifecycle</span></a></li><li style="--depth: 1;" class="astro-nehgavbu"><a href="#editing-and-the-dirty-flag" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">Editing and the dirty flag</span></a></li><li style="--depth: 1;" class="astro-nehgavbu"><a href="#runtime-modules" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">Runtime modules</span></a></li></ul></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#ownership" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Ownership</span></a></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#threading-model" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Threading model</span></a><ul class="astro-nehgavbu" style="--depth: 1;"><li style="--depth: 1;" class="astro-nehgavbu"><a href="#the-signal-tap" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">The signal tap</span></a></li><li style="--depth: 1;" class="astro-nehgavbu"><a href="#single-threaded-operation" style="--depth: 1;" class="astro-nehgavbu"><span style="--depth: 1;" class="astro-nehgavbu">Single-threaded operation</span></a></li></ul></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#management-subsystem" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Management subsystem</span></a></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#web-ui" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Web UI</span></a></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#persistence" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Persistence</span></a></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#error-handling" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Error handling</span></a></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#repository-map" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Repository map</span></a></li><li style="--depth: 0;" class="astro-nehgavbu"><a href="#extension-points" style="--depth: 0;" class="astro-nehgavbu"><span style="--depth: 0;" class="astro-nehgavbu">Extension points</span></a></li></ul></nav></starlight-toc><script type="module" src="/sig-docs/_astro/TableOfContents.astro_astro_type_script_index_0_lang.BpJaGz7G.js"></script></div></div></div></aside><div class="main-pane astro-ewuxxueg"><main data-pagefind-body class="astro-jggehc4m" lang="en" dir="ltr"><div class="content-panel astro-wylw2eem"><div class="sl-container astro-wylw2eem"><h1 id="_top" class="astro-uvf6rhac">Architecture</h1></div></div><div class="content-panel astro-wylw2eem"><div class="sl-container astro-wylw2eem"><div class="sl-markdown-content"><p>libsig is a C11 library for building signal-processing applications out of
+small units of logic (“capsules”) that exchange values (“signals”) along
+configured connections. This document explains how the pieces fit together, who
+owns what, and which threads touch which data. For per-feature design history
+see <code dir="auto">docs/superpowers/specs/</code> (the design of each piece) and
+<code dir="auto">docs/superpowers/plans/</code> (how it was built).</p>
+<p>Related documents:</p>
+<ul>
+<li><a href="https://bp1222.github.io/sig-docs/architecture/">Architecture site</a>: the explorable C4 model (<a href="https://github.com/bp1222/sig/blob/master/tools/architecture/README.md">how it is built</a>)</li>
+<li><a href="/sig-docs/docs/configuration/">Project configuration</a>: the on-disk project format</li>
+<li><a href="/sig-docs/docs/management-api/">Management API</a>: the <code dir="auto">sig_mgmt</code> operations for managing a running instance</li>
+<li><a href="/sig-docs/docs/rest-api/">REST API</a>: the management HTTP API (one transport over it)</li>
+<li><a href="/sig-docs/docs/writing-capsules/">Writing capsules</a>: adding your own logic</li>
+<li><a href="/sig-docs/docs/examples/">Examples</a>: runnable worked cases</li>
+<li><a href="https://github.com/bp1222/sig/blob/master/ui/README.md">Web UI</a>: the browser editor for a running host</li>
+</ul>
+<div class="sl-heading-wrapper level-h2"><h2 id="concepts">Concepts</h2><a class="sl-anchor-link" href="#concepts"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Concepts”</span></a></div>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Value</strong> (<code dir="auto">sig_value</code>)</td>
+<td>The data that flows: int, bool, double, string, bytes, or nested map/list.</td>
+</tr>
+<tr>
+<td><strong>Signal</strong></td>
+<td>A <code dir="auto">sig_value</code> emitted on an output terminal and delivered to input terminals.</td>
+</tr>
+<tr>
+<td><strong>Capsule</strong> (<code dir="auto">sig_capsule</code>)</td>
+<td>Compiled-in code: a name, input/output terminal tables, a table of the properties it accepts (<code dir="auto">sig_property</code>) and optional <code dir="auto">start</code>/<code dir="auto">stop</code> hooks. Available to every project.</td>
+</tr>
+<tr>
+<td><strong>Capsule configuration</strong> (<code dir="auto">sig_capsule_configuration</code>)</td>
+<td>A named, configured capsule: a capsule plus properties (<code dir="auto">configurations/&lt;Name&gt;.cfg</code>). Available to any service in the project.</td>
+</tr>
+<tr>
+<td><strong>Capsule instance</strong> (<code dir="auto">sig_capsule_instance</code>)</td>
+<td>One configuration as used by one service, with its own storage, state and routes. This is what runs, and what appears on the canvas.</td>
+</tr>
+<tr>
+<td><strong>Terminal</strong></td>
+<td>A named input (with a handler) or output on a capsule.</td>
+</tr>
+<tr>
+<td><strong>Service</strong> (<code dir="auto">sig_service</code>)</td>
+<td>A worker thread plus signal queue and job scheduler that owns a set of instances.</td>
+</tr>
+<tr>
+<td><strong>Project</strong> (<code dir="auto">sig_project</code>)</td>
+<td>A project loaded from a persistence store (a directory of <code dir="auto">.cfg</code> files, with the file backend): capsule configurations and services, wired together.</td>
+</tr>
+<tr>
+<td><strong>Runtime</strong> (<code dir="auto">sig_runtime</code>)</td>
+<td>Owns a project and the optional runtime modules; drives the start/stop lifecycle.</td>
+</tr>
+<tr>
+<td><strong>Runtime module</strong></td>
+<td>An optional runtime feature (currently the HTTP server, management, the glue that serves management over HTTP and the <a href="/sig-docs/docs/signal-feed/">signal feed</a>).</td>
+</tr>
+<tr>
+<td><strong>Host</strong></td>
+<td>A program (<code dir="auto">sighost</code>) that creates a runtime, registers capsules and runtime modules and waits for shutdown.</td>
+</tr>
+</tbody>
+</table>
+<div class="sl-heading-wrapper level-h3"><h3 id="naming">Naming</h3><a class="sl-anchor-link" href="#naming"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Naming”</span></a></div>
+<p>Three layers, in a 1 : n : n relationship:</p>
+<ul>
+<li>A <strong>capsule</strong> is the compiled-in implementation (<code dir="auto">simulator</code>, <code dir="auto">counter</code>, <code dir="auto">logger</code>, <code dir="auto">filter</code>, <code dir="auto">switch</code>, <code dir="auto">state_change</code>, <code dir="auto">weather</code>). There is one of each, available to every project.</li>
+<li>A <strong>capsule configuration</strong> is a named configuration of one capsule, such as <code dir="auto">Sim</code> (a <code dir="auto">simulator</code> with <code dir="auto">interval_ms</code> 250). It lives in <code dir="auto">configurations/&lt;Name&gt;.cfg</code>, and any service in the project may use it. One capsule has many configurations.</li>
+<li>A <strong>capsule instance</strong> is one configuration used by one service. It is what runs, and what appears on the canvas. One configuration has an instance in each service that lists it.</li>
+</ul>
+<p>In the files the layers appear as: the <code dir="auto">"type"</code> key of a configuration names its capsule; a service’s <code dir="auto">execution</code> entry names a configuration. In the REST API an instance reports <code dir="auto">"type"</code> (its capsule) and <code dir="auto">"configuration"</code>.</p>
+<p>“Module” on its own always means a <strong>runtime module</strong> (<code dir="auto">sig_runtime_module</code>: the HTTP server, management, the glue between them). A capsule is never called a module.</p>
+<p>Today an instance takes the name of its configuration, so a configuration appears at most once per service; two simulators in one service need two configurations.</p>
+<div class="sl-heading-wrapper level-h2"><h2 id="system-at-a-glance">System at a glance</h2><a class="sl-anchor-link" href="#system-at-a-glance"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “System at a glance”</span></a></div>
+<pre class="mermaid">flowchart LR
+    subgraph Browser
+        UI[Web UI&lt;br/&gt;React + React Flow]
+    end
+    subgraph sighost process
+        HTTP[sig::http_server&lt;br/&gt;server thread] --&gt; GLUE[sig::mgmt_http&lt;br/&gt;router + JSON + status mapping]
+        GLUE --&gt; MGMT[sig::mgmt&lt;br/&gt;operations on sig_value trees]
+        MGMT --&gt; RT[sig_runtime]
+        RT --&gt; PRJ[sig_project]
+        PRJ --&gt; SVC1[service A&lt;br/&gt;worker thread]
+        PRJ --&gt; SVC2[service B&lt;br/&gt;worker thread]
+    end
+    FILES[(project store&lt;br/&gt;configurations/*.cfg&lt;br/&gt;services/*.cfg)]
+    UI -- REST/JSON --&gt; HTTP
+    PRJ &lt;-- load / write&lt;br/&gt;via sig_persistence --&gt; FILES
+    CLI[curl / scripts] -- REST/JSON --&gt; HTTP</pre>
+<p>The project store (a directory, with the file backend) is the source of truth. The runtime loads it into
+services; the management API reads the live services and rewrites the files; the
+UI is just a client of that API and holds no state of its own beyond an unsaved
+draft.</p>
+<div class="sl-heading-wrapper level-h2"><h2 id="layering">Layering</h2><a class="sl-anchor-link" href="#layering"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Layering”</span></a></div>
+<div class="expressive-code"><link rel="stylesheet" href="/sig-docs/_astro/ec.w36nc.css"><script type="module" src="/sig-docs/_astro/ec.0vx5m.js"></script><figure class="frame not-content"><figcaption class="header"></figcaption><pre data-language="plaintext"><code><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">┌─────────────────────────────────────────────────────────────────┐</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">│ host/posix  main.c, sigwait shutdown        (sighost binary)    │</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">│ host/       sig_host_run: portable boot sequence                │</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">├─────────────────────────────────────────────────────────────────┤</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">│ capsules/   one folder per capsule, and their registration      │</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">├─────────────────────────────────────────────────────────────────┤</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">│ src/mgmt/   sig::mgmt (operations)   sig::mgmt_http (REST glue) │   optional</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">│ src/http/   sig::http_server  sig::http_client (curl)           │   optional</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">│ src/net/    sig::net (TCP sockets)                              │   optional</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">├─────────────────────────────────────────────────────────────────┤</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">│ sig_runtime    lifecycle, runtime modules, service control      │</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">│ sig_project    load a store -&gt; services + configurations        │</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">│ sig_config     parse .cfg JSON -&gt; capsules, services, wiring    │</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">│ sig_service    worker thread, signal queue, job scheduler       │</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">│ sig_capsule    capsules, configurations, instances, routes      │   sig::sig</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">│ sig_value  sig_json  sig_ht  sig_ll  sig_log  sig_persistence   │</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">│ sig_thread  sig_time  sig_poller   OS-specific, behind headers  │</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">│ sig_alloc      allocator (leak-tracking with SIG_DEBUG)         │</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">└─────────────────────────────────────────────────────────────────┘</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code=" ┌─────────────────────────────────────────────────────────────────┐ │ host/posix  main.c, sigwait shutdown        (sighost binary)    │ │ host/       sig_host_run: portable boot sequence                │ ├─────────────────────────────────────────────────────────────────┤ │ capsules/   one folder per capsule, and their registration      │ ├─────────────────────────────────────────────────────────────────┤ │ src/mgmt/   sig::mgmt (operations)   sig::mgmt_http (REST glue) │   optional │ src/http/   sig::http_server  sig::http_client (curl)           │   optional │ src/net/    sig::net (TCP sockets)                              │   optional ├─────────────────────────────────────────────────────────────────┤ │ sig_runtime    lifecycle, runtime modules, service control      │ │ sig_project    load a store -> services + configurations        │ │ sig_config     parse .cfg JSON -> capsules, services, wiring    │ │ sig_service    worker thread, signal queue, job scheduler       │ │ sig_capsule    capsules, configurations, instances, routes      │   sig::sig │ sig_value  sig_json  sig_ht  sig_ll  sig_log  sig_persistence   │ │ sig_thread  sig_time  sig_poller   OS-specific, behind headers  │ │ sig_alloc      allocator (leak-tracking with SIG_DEBUG)         │ └─────────────────────────────────────────────────────────────────┘"><div></div></button></div></figure></div>
+<p>Build targets (CMake):</p>
+<table>
+<thead>
+<tr>
+<th>Target</th>
+<th>Contains</th>
+<th>Enabled by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">sig::sig</code></td>
+<td>the core above (including <code dir="auto">sig_json</code>, the streaming JSON writer)</td>
+<td>always</td>
+</tr>
+<tr>
+<td><code dir="auto">sig::net</code></td>
+<td><code dir="auto">src/net/sig_net_posix.c</code></td>
+<td><code dir="auto">SIG_NET</code></td>
+</tr>
+<tr>
+<td><code dir="auto">sig::http_server</code></td>
+<td><code dir="auto">src/http/sig_http_server.c</code>, <code dir="auto">sig_http.c</code> (parser/formatter)</td>
+<td><code dir="auto">SIG_HTTP_SERVER</code> (needs <code dir="auto">SIG_NET</code>)</td>
+</tr>
+<tr>
+<td><code dir="auto">sig::http_client</code></td>
+<td><code dir="auto">src/http/sig_http_client_curl.c</code></td>
+<td><code dir="auto">SIG_HTTP_CLIENT</code> (needs libcurl)</td>
+</tr>
+<tr>
+<td><code dir="auto">sig::mgmt</code></td>
+<td><code dir="auto">src/mgmt/sig_mgmt.c</code>: transport-neutral operations; no HTTP or socket dependency (links only <code dir="auto">sig::sig</code>)</td>
+<td><code dir="auto">SIG_MGMT</code></td>
+</tr>
+<tr>
+<td><code dir="auto">sig::mgmt_http</code></td>
+<td><code dir="auto">src/mgmt/sig_mgmt_http.c</code> (glue) and <code dir="auto">sig_mgmt_rest.c</code> (private router, status mapping, JSON)</td>
+<td>automatic when <code dir="auto">SIG_MGMT</code> and <code dir="auto">SIG_HTTP_SERVER</code> are both on</td>
+</tr>
+<tr>
+<td><code dir="auto">sig::host</code></td>
+<td><code dir="auto">host/sig_host.c</code></td>
+<td><code dir="auto">SIG_HOST</code></td>
+</tr>
+<tr>
+<td><code dir="auto">sig_capsule_&lt;name&gt;</code>, <code dir="auto">sig_builtin_capsules</code></td>
+<td>built-in capsules</td>
+<td><code dir="auto">SIG_HOST</code>, <code dir="auto">SIG_CAPSULES</code></td>
+</tr>
+<tr>
+<td><code dir="auto">sighost</code></td>
+<td><code dir="auto">host/&lt;platform&gt;/</code> entry point</td>
+<td><code dir="auto">SIG_HOST</code></td>
+</tr>
+</tbody>
+</table>
+<p>Everything OS-specific is behind <code dir="auto">sig/platform/sig_thread.h</code> and <code dir="auto">sig_time.h</code> (threads, mutexes, condition
+variables, the reader/writer lock <code dir="auto">sig_rwlock</code> that <code dir="auto">sig_mgmt</code> uses, clocks), <code dir="auto">sig_poller.h</code> and <code dir="auto">sig/net/sig_net.h</code> (TCP). Only POSIX backends exist today
+(<code dir="auto">src/platform/posix/</code>); the rest of the code does not include OS headers.</p>
+<div class="sl-heading-wrapper level-h2"><h2 id="data-flow">Data flow</h2><a class="sl-anchor-link" href="#data-flow"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Data flow”</span></a></div>
+<p>A signal travels from a capsule’s output terminal to the input terminal of
+another capsule:</p>
+<ol>
+<li>A capsule calls <code dir="auto">sig_capsule_instance_notify(src, "out", &amp;value)</code>.</li>
+<li><code dir="auto">src-&gt;routes</code> maps the output terminal name to a list of
+<code dir="auto">(destination instance, input terminal)</code> routes, set up at load time from
+the service file’s <code dir="auto">receivers</code>. For every route:</li>
+<li><code dir="auto">sig_service_enqueue()</code> on the <em>destination’s</em> service <strong>copies</strong> the value
+(<code dir="auto">sig_value_dup</code>) into a queue entry and signals the service’s condition
+variable. The caller never blocks on the receiver.</li>
+<li>The destination service’s worker thread dequeues the entry and calls
+<code dir="auto">terminal-&gt;handler(instance, &amp;signal, terminal_name)</code>.</li>
+</ol>
+<p>Consequences:</p>
+<ul>
+<li>Delivery is asynchronous and per-destination-service FIFO. There is no
+ordering guarantee between signals queued by different sources.</li>
+<li>Sender and receiver may be in the same service or different ones; the path is
+identical.</li>
+<li>Notifying an output terminal with no routes silently drops the signal. With
+several routes delivery is best-effort: one failing destination does not stop
+the rest, and the last failure status is returned.</li>
+<li>The queue copies values, so the sender keeps ownership of what it passed.</li>
+</ul>
+<div class="sl-heading-wrapper level-h3"><h3 id="scheduling">Scheduling</h3><a class="sl-anchor-link" href="#scheduling"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Scheduling”</span></a></div>
+<p>Capsules may schedule periodic or one-shot callbacks that run on their
+service’s worker thread (<code dir="auto">sig_capsule_instance_schedule</code>). The worker uses a
+timed wait on its condition variable, so an idle service consumes no CPU.
+Minimum interval is 1 ms; a repeating job that overruns its interval skips
+missed fires rather than bursting to catch up; job nodes are retained until the
+service is destroyed, so do not schedule unbounded numbers of one-shot jobs.</p>
+<div class="sl-heading-wrapper level-h3"><h3 id="values">Values</h3><a class="sl-anchor-link" href="#values"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Values”</span></a></div>
+<p><code dir="auto">sig_value</code> is a small tagged union. Strings, bytes, maps and lists have
+refcounted payloads: <code dir="auto">sig_value_copy</code> shares, <code dir="auto">sig_value_dup</code> deep-copies.
+Containers are mutable only while uniquely owned; once shared they are frozen
+and mutators return <code dir="auto">SIG_ERR_STATE</code>. <code dir="auto">put</code>/<code dir="auto">append</code> move the child in.
+<code dir="auto">sig_value_to_json</code> / <code dir="auto">sig_value_from_json</code> convert to and from JSON (sorted
+keys, base64 for bytes, strict parser, nesting limited to
+<code dir="auto">SIG_VALUE_MAX_DEPTH</code> = 32).</p>
+<div class="sl-heading-wrapper level-h2"><h2 id="lifecycle">Lifecycle</h2><a class="sl-anchor-link" href="#lifecycle"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Lifecycle”</span></a></div>
+<div class="sl-heading-wrapper level-h3"><h3 id="runtime-state-machine">Runtime state machine</h3><a class="sl-anchor-link" href="#runtime-state-machine"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Runtime state machine”</span></a></div>
+<div class="expressive-code"><figure class="frame not-content"><figcaption class="header"></figcaption><pre data-language="plaintext"><code><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">CREATED ──start──▶ STARTING ──▶ RUNNING ──stop──▶ STOPPING ──▶ CREATED</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53">    </span></span><span style="--0:#d6deeb;--1:#403f53">▲                                                              │</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53">    </span></span><span style="--0:#d6deeb;--1:#403f53">└──────────────────────── may be started again ────────────────┘</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code=" CREATED ──start──▶ STARTING ──▶ RUNNING ──stop──▶ STOPPING ──▶ CREATED    ▲                                                              │    └──────────────────────── may be started again ────────────────┘"><div></div></button></div></figure></div>
+<p><code dir="auto">sig_runtime_start()</code>:</p>
+<ol>
+<li>Loads the project from the store (<code dir="auto">sig_project_load</code>). Nothing is running yet.</li>
+<li>Two phases over the registered runtime modules: <code dir="auto">create</code> for every module in
+registration order, then <code dir="auto">start</code> for every module in registration order.</li>
+<li>Starts every service with <code dir="auto">"auto_start": true</code>. A failure here is logged but
+does not fail the call.</li>
+</ol>
+<p>If steps 1–2 fail, everything done so far is unwound in reverse order and the
+runtime returns to <code dir="auto">CREATED</code>.</p>
+<p><code dir="auto">sig_runtime_stop()</code> stops all services, then stops every module, then destroys
+every module (each in reverse order), then destroys the project.</p>
+<p>Shutdown is requested with <code dir="auto">sig_runtime_request_shutdown()</code> and observed by
+<code dir="auto">sig_runtime_wait()</code>. The request is thread-safe but <strong>not async-signal-safe</strong>,
+so hosts block <code dir="auto">SIGINT</code>/<code dir="auto">SIGTERM</code> and call it from a dedicated <code dir="auto">sigwait()</code>
+thread. <code dir="auto">POST /system/shutdown</code> takes the same path.</p>
+<div class="sl-heading-wrapper level-h3"><h3 id="host-boot-sequence-sig_host_run">Host boot sequence (<code dir="auto">sig_host_run</code>)</h3><a class="sl-anchor-link" href="#host-boot-sequence-sig_host_run"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Host boot sequence (sig_host_run)”</span></a></div>
+<div class="expressive-code"><figure class="frame not-content"><figcaption class="header"></figcaption><pre data-language="plaintext"><code><div class="ec-line"><div class="code"><span style="--0:#d6deeb;--1:#403f53">open store → create runtime → register modules → arm platform shutdown trigger</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53">  </span></span><span style="--0:#d6deeb;--1:#403f53">→ sig_runtime_start → sig_runtime_wait → sig_runtime_stop</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53">  </span></span><span style="--0:#d6deeb;--1:#403f53">→ disarm trigger → destroy runtime → close store</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="open store → create runtime → register modules → arm platform shutdown trigger  → sig_runtime_start → sig_runtime_wait → sig_runtime_stop  → disarm trigger → destroy runtime → close store"><div></div></button></div></figure></div>
+<p>A failure at any step unwinds the earlier ones. <code dir="auto">sig_host_platform</code> is the
+seam for platform-specific shutdown triggers (<code dir="auto">host/posix/</code> provides the
+<code dir="auto">sigwait</code> one). <code dir="auto">sig_runtime_start()</code> clears any shutdown request made before
+it, which is why the trigger is armed first but only matters afterwards.</p>
+<div class="sl-heading-wrapper level-h3"><h3 id="service-lifecycle">Service lifecycle</h3><a class="sl-anchor-link" href="#service-lifecycle"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Service lifecycle”</span></a></div>
+<ul>
+<li><code dir="auto">sig_service_start()</code> runs each owned instance’s <code dir="auto">start</code> hook <strong>synchronously
+on the calling thread</strong>, then spawns the worker thread. By the time it
+returns the hooks have run.</li>
+<li><code dir="auto">sig_service_stop()</code> joins the worker thread <strong>first</strong>, then runs each
+instance’s <code dir="auto">stop</code> hook on the calling thread.</li>
+<li>Starting a started service is <code dir="auto">SIG_ERR_EXISTS</code>; stopping or destroying a
+never-started or stopped service is a safe no-op.</li>
+</ul>
+<div class="sl-heading-wrapper level-h3"><h3 id="editing-and-the-dirty-flag">Editing and the <code dir="auto">dirty</code> flag</h3><a class="sl-anchor-link" href="#editing-and-the-dirty-flag"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Editing and the dirty flag”</span></a></div>
+<p>Edits arrive through the management API (<code dir="auto">PUT</code>/<code dir="auto">PATCH</code>/<code dir="auto">DELETE</code>) and are applied to
+the project under a runtime-wide edit lock:</p>
+<pre class="mermaid">sequenceDiagram
+    participant C as Client (UI / curl)
+    participant M as sig::mgmt
+    participant P as sig_project
+    participant D as Disk
+    C-&gt;&gt;M: PATCH /configurations/Sim
+    M-&gt;&gt;P: validate against capsule property table
+    P-&gt;&gt;D: save configurations/Sim (atomic write)
+    P-&gt;&gt;P: mark services using Sim dirty
+    M--&gt;&gt;C: 200 (new document)
+    Note over P: running services are untouched
+    C-&gt;&gt;M: POST /services/test/restart
+    M-&gt;&gt;P: stop, rebuild from stored definitions, start
+    M--&gt;&gt;C: 200 state running (dirty false)</pre>
+<p>A stopped service is rebuilt immediately on edit; a running one keeps running its
+old instances until stopped, so an edit can never half-apply. Nothing validated
+is written if validation fails, and a failed disk write leaves the old file and
+definition in place.</p>
+<div class="sl-heading-wrapper level-h3"><h3 id="runtime-modules">Runtime modules</h3><a class="sl-anchor-link" href="#runtime-modules"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Runtime modules”</span></a></div>
+<p>A <code dir="auto">sig_runtime_module</code> is <code dir="auto">{name, create, start, stop, destroy}</code> with every
+hook except <code dir="auto">name</code> optional. Startup is two-phase: every module is created in
+registration order, then every module is started; shutdown stops every module,
+then destroys every module, in reverse. A module may therefore rely on the state
+of those registered before it (<code dir="auto">sig_runtime_module_state</code>). To serve management
+over HTTP register <code dir="auto">http_server</code>, then <code dir="auto">mgmt</code>, then <code dir="auto">mgmt_http</code>: the glue looks
+up both in its <code dir="auto">create</code>. The shape deliberately mirrors
+<code dir="auto">sig_persistence_module</code>; future runtime features (IPC, security) are meant to
+plug in the same way.</p>
+<div class="sl-heading-wrapper level-h2"><h2 id="ownership">Ownership</h2><a class="sl-anchor-link" href="#ownership"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Ownership”</span></a></div>
+<table>
+<thead>
+<tr>
+<th>Thing</th>
+<th>Owner</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Capsule registry</td>
+<td>the host</td>
+<td>borrowed by runtime/project; must outlive the runtime</td>
+</tr>
+<tr>
+<td>Capsules</td>
+<td>static data</td>
+<td>borrowed by configurations; must outlive them</td>
+</tr>
+<tr>
+<td>Capsule configurations</td>
+<td>project</td>
+<td>destroyed with the project</td>
+</tr>
+<tr>
+<td>Capsule instances</td>
+<td>project (via an owned list)</td>
+<td>services do <strong>not</strong> own their instances</td>
+</tr>
+<tr>
+<td>Services</td>
+<td>project</td>
+<td>stopped before destroy</td>
+</tr>
+<tr>
+<td>Runtime module state</td>
+<td>runtime</td>
+<td>created/destroyed with the runtime lifecycle</td>
+</tr>
+<tr>
+<td>Signals in flight</td>
+<td>the destination service’s queue</td>
+<td>duplicated on enqueue</td>
+</tr>
+</tbody>
+</table>
+<p><code dir="auto">sig_project_destroy()</code> stops every service, then destroys instances, services
+and configurations, in that order.</p>
+<div class="sl-heading-wrapper level-h2"><h2 id="threading-model">Threading model</h2><a class="sl-anchor-link" href="#threading-model"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Threading model”</span></a></div>
+<p>Threads in a running system:</p>
+<table>
+<thead>
+<tr>
+<th>Thread</th>
+<th>Runs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Host main thread</td>
+<td><code dir="auto">sig_runtime_start/wait/stop</code>; module create/start/stop hooks; capsule <code dir="auto">start</code>/<code dir="auto">stop</code> hooks</td>
+</tr>
+<tr>
+<td>One worker per <strong>running</strong> service</td>
+<td>terminal handlers and scheduled jobs of that service’s instances</td>
+</tr>
+<tr>
+<td><code dir="auto">http_server</code> server thread</td>
+<td>accepts one connection at a time and runs the registered handlers, for management <code dir="auto">sig_mgmt_http</code>’s REST handler (absent in single-threaded mode: see below)</td>
+</tr>
+<tr>
+<td><code dir="auto">signal_feed</code> thread</td>
+<td>the feed’s WebSocket connections, when the runtime has no loop; with a loop (<code dir="auto">-s</code>) they run on the loop thread. Absent unless <code dir="auto">SIG_SIGNAL_FEED</code></td>
+</tr>
+<tr>
+<td>Platform shutdown thread</td>
+<td>blocks in <code dir="auto">sigwait()</code> and calls <code dir="auto">sig_runtime_request_shutdown</code></td>
+</tr>
+</tbody>
+</table>
+<p>Rules:</p>
+<ol>
+<li><strong>An instance belongs to its service’s thread.</strong> Once added to a started
+service, only that thread may touch the instance’s <code dir="auto">storage</code> and
+<code dir="auto">state</code> (from handlers, jobs, or lifecycle hooks). The one thread-safe
+way to affect it from elsewhere is a signal (<code dir="auto">notify</code>/<code dir="auto">enqueue</code>). The
+<code dir="auto">sig_ht</code> containers are not internally synchronized.</li>
+<li><strong>Never call runtime control from service threads.</strong> <code dir="auto">sig_runtime_service_*</code>
+and <code dir="auto">sig_runtime_uptime_seconds</code> take a control mutex that is held across
+service start/stop joins. Calling them from a service or capsule thread can
+deadlock. Call from module, transport or host threads only.</li>
+<li><strong><code dir="auto">sig_mgmt</code> operations need the runtime RUNNING</strong> (<code dir="auto">SIG_ERR_STATE</code>
+otherwise) and must not be called from service or capsule threads (see
+<a href="/sig-docs/docs/management-api/#locking-and-threads">Management API</a>). Transports call
+them from threads their module’s <code dir="auto">stop</code> hook joins (the HTTP server thread).</li>
+<li><strong>Initialize logging before spawning threads that log</strong> (<code dir="auto">sig_log_init</code>).</li>
+<li><code dir="auto">sig_runtime_service_*</code> calls are serialized and rejected unless the runtime
+is RUNNING, so they cannot race <code dir="auto">sig_runtime_stop()</code>.</li>
+<li>Introspection (<code dir="auto">sig_project_walk_services</code>, <code dir="auto">sig_service_walk_instances</code>,
+<code dir="auto">sig_capsule_configuration_walk_properties</code>) is safe from any thread once the project is
+loaded, because the sets and configuration properties are not modified after load.</li>
+<li><code dir="auto">sig_net_*</code> timeouts: a negative <code dir="auto">timeout_ms</code> waits forever (it goes to
+<code dir="auto">poll()</code>).</li>
+</ol>
+<div class="sl-heading-wrapper level-h3"><h3 id="the-signal-tap">The signal tap</h3><a class="sl-anchor-link" href="#the-signal-tap"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “The signal tap”</span></a></div>
+<p><code dir="auto">sig_runtime_set_tap</code> installs one observer that sees every signal crossing a
+terminal boundary; the <a href="/sig-docs/docs/signal-feed/">signal feed</a> is its only user. It fires
+in two places: for an <strong>output</strong>, in <code dir="auto">sig_capsule_instance_notify</code> before the
+route lookup (so it sees signals on unrouted outputs too), and for an <strong>input</strong>,
+in the service just before the terminal’s handler runs. The callback therefore
+runs on whichever thread emits: a service worker, or the loop thread when
+services are driven, and <strong>it must not block</strong> or call into the runtime. The feed’s
+callback copies the value into a bounded per-subscription queue and counts
+drops instead of waiting.</p>
+<p>The tap is installed only while at least one subscription exists, so with no
+subscribers the signal path pays one atomic load per signal. It is applied to
+every service, including ones started or restarted later, but a runtime
+restart forgets it (see <a href="/sig-docs/docs/signal-feed/#restart-behaviour">Restart behaviour</a>).</p>
+<div class="sl-heading-wrapper level-h3"><h3 id="single-threaded-operation">Single-threaded operation</h3><a class="sl-anchor-link" href="#single-threaded-operation"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Single-threaded operation”</span></a></div>
+<p>The threads above are the default. A host can instead run everything on one
+thread (<code dir="auto">sighost -s</code>, <code dir="auto">sig_host_config.single_threaded</code>), for hardware where
+threads are scarce or absent. The portable pieces:</p>
+<table>
+<thead>
+<tr>
+<th>Piece</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code dir="auto">sig_poller</code> (<code dir="auto">sig_poller.h</code>)</td>
+<td>The readiness backend: add/modify/remove an fd, wait with a timeout, wake. Exactly one implementation is linked, chosen by <code dir="auto">-DSIG_POLLER=&lt;name&gt;</code> (<code dir="auto">src/platform/posix/sig_poller_&lt;name&gt;.c</code>). Three exist: <code dir="auto">poll</code> (portable), <code dir="auto">kqueue</code> (macOS/BSD, the default there; the wake is an <code dir="auto">EVFILT_USER</code> event rather than a pipe) and <code dir="auto">epoll</code> (Linux; opt in with <code dir="auto">-DSIG_POLLER=epoll</code>, one <code dir="auto">eventfd</code> for the wake). <code dir="auto">test/test_sig_poller.c</code> is the contract every backend must pass, and it is built and run once per backend the system supports.</td>
+</tr>
+<tr>
+<td><code dir="auto">sig_loop</code> (<code dir="auto">sig_loop.h</code>)</td>
+<td>fd watches, one-shot timers and a per-iteration step hook, over a poller. Backend-independent.</td>
+</tr>
+<tr>
+<td><code dir="auto">sig_service_set_driven()</code> / <code dir="auto">sig_service_step()</code></td>
+<td>A <em>driven</em> service starts no worker thread; each step delivers the queued signals and runs due jobs, then reports its next deadline.</td>
+</tr>
+<tr>
+<td><code dir="auto">sig_runtime_set_loop()</code> / <code dir="auto">sig_runtime_step()</code></td>
+<td>Gives the runtime a loop: every service (including ones started or restarted later) becomes driven, and the host’s step hook calls <code dir="auto">sig_runtime_step()</code>. Cross-thread work and shutdown requests wake the loop.</td>
+</tr>
+</tbody>
+</table>
+<p><code dir="auto">sig_host_run</code> creates the loop, installs the step hook and runs it where it
+would otherwise call <code dir="auto">sig_runtime_wait()</code>. Runtime modules find the loop with
+<code dir="auto">sig_runtime_loop()</code>: <code dir="auto">http_server</code> then serves from it (non-blocking connections,
+one timer each, at most four at once) instead of its own thread, and <code dir="auto">weather</code>
+needs no thread of its own in either mode. Handlers, jobs and management requests all
+run on the loop thread, so rule 1 still holds with one thread.</p>
+<p>What still runs on its own thread in this mode: the platform shutdown thread
+(<code dir="auto">sigwait</code>; a port can call <code dir="auto">sig_runtime_request_shutdown</code> from its own trigger)
+and, while a request is in flight, the libcurl port of <code dir="auto">sig_http_get_async</code>
+(one short-lived thread per request). A port with no curl or threads implements
+<code dir="auto">sig_http_get_async</code> (<code dir="auto">sig_http_client.h</code>) natively and calls its completion
+callback from its own loop.</p>
+<p>Rules for code that runs in either mode: never block in a handler, job or
+completion callback; hand results from other threads back to the service with
+<code dir="auto">sig_service_schedule_job</code> (thread-safe, wakes the loop); a runtime module that
+registers fds or timers on the loop removes them in its <code dir="auto">stop</code> hook.</p>
+<div class="sl-heading-wrapper level-h2"><h2 id="management-subsystem">Management subsystem</h2><a class="sl-anchor-link" href="#management-subsystem"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Management subsystem”</span></a></div>
+<p><code dir="auto">sig_mgmt</code> is the supported API for managing a running instance; nothing
+outside it should mutate a running project (a documented rule, not enforced).
+It is a set of transport-neutral operations returning <code dir="auto">sig_value</code> trees and
+<code dir="auto">sig_status_t</code> codes. Transports sit on top. Dependencies point downward only:</p>
+<div class="expressive-code"><figure class="frame not-content"><figcaption class="header"></figcaption><pre data-language="plaintext"><code><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">HTTP client ──▶ sig::http_server ──▶ sig::mgmt_http ──operations──▶ sig::mgmt ──▶ sig_runtime API</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53">                 </span></span><span style="--0:#d6deeb;--1:#403f53">(sockets, parsing,   (glue: router,   (sig_value     (validation, snapshots,</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53">                  </span></span><span style="--0:#d6deeb;--1:#403f53">limits, CORS)        JSON, status     trees,          locking)</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53">                                       </span></span><span style="--0:#d6deeb;--1:#403f53">mapping)         sig_status_t)</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">REPL / ssh / IPC module (yours) ───────────────operations──────────▶ sig::mgmt</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code=" HTTP client ──▶ sig::http_server ──▶ sig::mgmt_http ──operations──▶ sig::mgmt ──▶ sig_runtime API                 (sockets, parsing,   (glue: router,   (sig_value     (validation, snapshots,                  limits, CORS)        JSON, status     trees,          locking)                                       mapping)         sig_status_t) REPL / ssh / IPC module (yours) ───────────────operations──────────▶ sig::mgmt"><div></div></button></div></figure></div>
+<ul>
+<li><strong><code dir="auto">sig::mgmt</code></strong> (<code dir="auto">sig_mgmt.h</code>, <code dir="auto">docs/management-api.md</code>) has no HTTP
+dependency: no paths, status codes or response format (definition documents go in and out as JSON text, parsed into trees), and it links only
+<code dir="auto">sig::sig</code>. It reads state through the public runtime/project/service
+introspection API and changes it only through <code dir="auto">sig_runtime_edit</code>,
+<code dir="auto">sig_runtime_service_*</code> and <code dir="auto">sig_runtime_request_shutdown</code>. It owns validation,
+view shaping and one reader/writer lock (<code dir="auto">sig_rwlock</code>): reads build owned
+snapshots under the shared lock, edits take it exclusive. Starting a stopped,
+dirty service rebuilds it under the write lock and then starts with
+<code dir="auto">sig_runtime_service_start_prebuilt</code>, which reports <code dir="auto">SIG_ERR_STALE</code> rather
+than rebuild.</li>
+<li><strong><code dir="auto">sig::http_server</code></strong> (<code dir="auto">sig_http_server.h</code>) is the shared HTTP/1.1 server: one
+server thread (or the runtime’s loop) that parses a minimal request, enforces
+size and time limits, applies CORS and dispatches to the handler registered for
+the longest matching path prefix. It owns the <code dir="auto">bind</code>, <code dir="auto">port</code>, <code dir="auto">cors_origin</code> and
+<code dir="auto">timeout_ms</code> configuration, and listens only if some module registered routes.
+Read the bound port with <code dir="auto">sig_http_server_get_port()</code>. <code dir="auto">sig_http.c</code>
+(parser/formatter) is private; <code dir="auto">sig_json</code> (the streaming JSON writer, core
+in <code dir="auto">sig/value/sig_json.h</code>) is public.</li>
+<li><strong><code dir="auto">sig::mgmt_http</code></strong> (<code dir="auto">sig_mgmt_http.h</code>) is the glue: it registers the root
+path with the HTTP server and forwards requests to its private REST layer
+(<code dir="auto">sig_mgmt_rest.c</code>), which holds the route table, 400/404/405 handling,
+the mapping from <code dir="auto">sig_status_t</code> to HTTP statuses and error bodies, and the
+JSON rendering of result trees. The routes live at the root (<code dir="auto">/system</code>,
+<code dir="auto">/services/...</code>). It takes no config; a non-empty one is rejected so old
+<code dir="auto">port=...</code> use fails loudly. It is built only when <code dir="auto">SIG_MGMT</code> and
+<code dir="auto">SIG_HTTP_SERVER</code> are both on; a <code dir="auto">SIG_MGMT</code>-only build has the operations
+and their tests but no REST layer.</li>
+<li>Authorization has a single seam, <code dir="auto">request_authorized()</code>. There is no
+authentication yet.</li>
+</ul>
+<p>Another transport (a serial link, a REPL, an ssh text tool, an IPC executable)
+is a runtime module that calls <code dir="auto">sig_mgmt_from_runtime</code> and the operations
+directly. See <a href="/sig-docs/docs/management-api/#writing-a-transport">management-api.md</a>, and
+<a href="/sig-docs/docs/rest-api/">rest-api.md</a> for the REST endpoints.</p>
+<div class="sl-heading-wrapper level-h2"><h2 id="web-ui">Web UI</h2><a class="sl-anchor-link" href="#web-ui"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Web UI”</span></a></div>
+<p><code dir="auto">ui/</code> is a separate TypeScript application (React, React Flow, TanStack Query,
+Material UI) that talks only to the REST API; the C code has no knowledge of it
+beyond the optional CORS origin (<code dir="auto">sighost -o</code>).</p>
+<div class="expressive-code"><figure class="frame not-content"><figcaption class="header"></figcaption><pre data-language="plaintext"><code><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53"> </span></span><span style="--0:#d6deeb;--1:#403f53">api/ (zod-validated client) ─▶ state/ (queries, polling) ─▶ graph/ (model + ELK layout)</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53">                                      </span></span><span style="--0:#d6deeb;--1:#403f53">│                              │</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53">                                      </span></span><span style="--0:#d6deeb;--1:#403f53">▼                              ▼</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53">                               </span></span><span style="--0:#d6deeb;--1:#403f53">edit/ (draft, validate, save) ─▶ canvas/ + panels/</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code=" api/ (zod-validated client) ─▶ state/ (queries, polling) ─▶ graph/ (model + ELK layout)                                      │                              │                                      ▼                              ▼                               edit/ (draft, validate, save) ─▶ canvas/ + panels/"><div></div></button></div></figure></div>
+<ul>
+<li>It draws the <strong>stored</strong> definition (<code dir="auto">GET /services/{name}/config</code>), not the live
+service, so a service with pending edits shows what it will run after a restart.</li>
+<li>Edits accumulate in a client-side <strong>draft</strong>. <strong>Save</strong> first re-reads the host to
+detect conflicts, then <code dir="auto">PUT</code>s each new or changed configuration, then <code dir="auto">PATCH</code>es
+the service. A failure part-way keeps what was written, and a retry rebases the
+draft onto it.</li>
+<li>Validation duplicates the capsule property tables from <code dir="auto">GET /capsules</code>, so the
+form can show errors before the host would reject them. The host remains the
+authority.</li>
+<li>It polls every 10 s (the API has no push channel); canvas positions are kept in
+browser storage per host and service.</li>
+</ul>
+<div class="sl-heading-wrapper level-h2"><h2 id="persistence">Persistence</h2><a class="sl-anchor-link" href="#persistence"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Persistence”</span></a></div>
+<p><code dir="auto">sig_persistence</code> is a pluggable store interface keyed by <code dir="auto">(namespace, key)</code>
+(<code dir="auto">create</code>, <code dir="auto">load</code>, <code dir="auto">save</code>, <code dir="auto">remove</code>, <code dir="auto">list</code>) with a registry. The project lives in
+it: <code dir="auto">sig_project_load(store, registry, out)</code> reads the <code dir="auto">configurations</code> and
+<code dir="auto">services</code> namespaces, <code dir="auto">sig_runtime_config</code> carries the <code dir="auto">store</code> (borrowed), and
+every project edit saves through it. The file backend
+(<code dir="auto">sig_persistence_file_module</code>, configured with a base directory) stores
+<code dir="auto">&lt;base&gt;/&lt;ns&gt;/&lt;key&gt;.cfg</code> for <code dir="auto">configurations</code> and <code dir="auto">services</code> and <code dir="auto">.sig</code> for any
+other namespace, writes atomically (temp file, fsync, rename) and creates missing
+directories on save. A namespace matches <code dir="auto">[A-Za-z0-9_-]{1,64}</code>; a key is 1 to 128
+bytes with no <code dir="auto">/</code>, no <code dir="auto">..</code> and no control characters. Consequently, if the
+project directory is removed after boot, a runtime restart loads an empty project
+and the next save recreates the directories. The edit API’s own name rule
+(<code dir="auto">[A-Za-z0-9_-]{1,64}</code>) is stricter than the key rule, so files with other sane
+names still load but cannot be created through the API.</p>
+<div class="sl-heading-wrapper level-h2"><h2 id="error-handling">Error handling</h2><a class="sl-anchor-link" href="#error-handling"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Error handling”</span></a></div>
+<p>Functions return <code dir="auto">sig_status_t</code>: <code dir="auto">SIG_OK</code> (0) or a negative <code dir="auto">SIG_ERR_*</code>
+(<code dir="auto">ALLOC</code>, <code dir="auto">INVALID_ARG</code>, <code dir="auto">NOT_FOUND</code>, <code dir="auto">EXISTS</code>, <code dir="auto">PLATFORM</code>, <code dir="auto">TYPE_MISMATCH</code>,
+<code dir="auto">PARSE</code>, <code dir="auto">STATE</code>, <code dir="auto">TIMEOUT</code>, <code dir="auto">STALE</code>). Constructors write their out-parameter only on
+success and leave nothing allocated on failure. Allocation goes through
+<code dir="auto">sig_alloc</code>; building with <code dir="auto">-DSIG_DEBUG=ON</code> enables leak tracking.</p>
+<div class="sl-heading-wrapper level-h2"><h2 id="repository-map">Repository map</h2><a class="sl-anchor-link" href="#repository-map"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Repository map”</span></a></div>
+<div class="expressive-code"><figure class="frame not-content"><figcaption class="header"></figcaption><pre data-language="plaintext"><code><div class="ec-line"><div class="code"><span style="--0:#d6deeb;--1:#403f53">include/sig/&lt;area&gt;/ public headers (API surface), one folder per function</span></div></div><div class="ec-line"><div class="code"><span style="--0:#d6deeb;--1:#403f53">src/&lt;area&gt;/         implementation, mirroring include/sig/&lt;area&gt;/</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53">                    </span></span><span style="--0:#d6deeb;--1:#403f53">(base value runtime project persistence net http mgmt platform)</span></div></div><div class="ec-line"><div class="code"><span style="--0:#d6deeb;--1:#403f53">src/platform/posix/ OS backends (threads, clocks, poller)</span></div></div><div class="ec-line"><div class="code"><span style="--0:#d6deeb;--1:#403f53">src/net/, src/http/ POSIX socket backend, HTTP server/parser and curl client</span></div></div><div class="ec-line"><div class="code"><span style="--0:#d6deeb;--1:#403f53">capsules/&lt;name&gt;/    one folder per built-in capsule (source, header, tests)</span></div></div><div class="ec-line"><div class="code"><span style="--0:#d6deeb;--1:#403f53">capsules/           the registration shim (sig_builtin_capsules)</span></div></div><div class="ec-line"><div class="code"><span style="--0:#d6deeb;--1:#403f53">host/               sig_host (portable; header in host/include/sig/) and</span></div></div><div class="ec-line"><div class="code"><span class="indent"><span style="--0:#d6deeb;--1:#403f53">                    </span></span><span style="--0:#d6deeb;--1:#403f53">host/&lt;platform&gt;/ (entry point)</span></div></div><div class="ec-line"><div class="code"><span style="--0:#d6deeb;--1:#403f53">examples/           runnable sample projects</span></div></div><div class="ec-line"><div class="code"><span style="--0:#d6deeb;--1:#403f53">test/               cmocka unit tests, one binary per module</span></div></div><div class="ec-line"><div class="code"><span style="--0:#d6deeb;--1:#403f53">docs/               this documentation; superpowers/ holds design specs and plans</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="include/sig/<area>/ public headers (API surface), one folder per functionsrc/<area>/         implementation, mirroring include/sig/<area>/                    (base value runtime project persistence net http mgmt platform)src/platform/posix/ OS backends (threads, clocks, poller)src/net/, src/http/ POSIX socket backend, HTTP server/parser and curl clientcapsules/<name>/    one folder per built-in capsule (source, header, tests)capsules/           the registration shim (sig_builtin_capsules)host/               sig_host (portable; header in host/include/sig/) and                    host/<platform>/ (entry point)examples/           runnable sample projectstest/               cmocka unit tests, one binary per moduledocs/               this documentation; superpowers/ holds design specs and plans"><div></div></button></div></figure></div>
+<div class="sl-heading-wrapper level-h2"><h2 id="extension-points">Extension points</h2><a class="sl-anchor-link" href="#extension-points"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 1 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 0 0-1.42-1.42m8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 1 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 0 0 0 1.42 1 1 0 0 0 1.42 0l3.88-3.89a4.49 4.49 0 0 0 0-6.33M8.83 15.17a1 1 0 0 0 .71.29 1 1 0 0 0 .71-.29l4.92-4.92a1 1 0 1 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Extension points”</span></a></div>
+<table>
+<thead>
+<tr>
+<th>To add</th>
+<th>Do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A capsule</td>
+<td><a href="/sig-docs/docs/writing-capsules/">writing-capsules.md</a></td>
+</tr>
+<tr>
+<td>A runtime module</td>
+<td>Implement a <code dir="auto">sig_runtime_module</code> and register it in the host before <code dir="auto">sig_runtime_start</code></td>
+</tr>
+<tr>
+<td>A management transport</td>
+<td>A runtime module registered after <code dir="auto">mgmt</code> that maps its framing onto the <code dir="auto">sig_mgmt_*</code> operations (<a href="/sig-docs/docs/management-api/#writing-a-transport">management-api.md</a>; <code dir="auto">sig::mgmt_http</code> does this for REST on <code dir="auto">sig::http_server</code>)</td>
+</tr>
+<tr>
+<td>A persistence backend</td>
+<td>Implement a <code dir="auto">sig_persistence_module</code> (namespaced <code dir="auto">load</code>/<code dir="auto">save</code>/<code dir="auto">remove</code>/<code dir="auto">list</code>); a host selects it as its store (<code dir="auto">sig_host_config.store_module</code>)</td>
+</tr>
+<tr>
+<td>A host platform</td>
+<td>Add <code dir="auto">host/&lt;platform&gt;/</code> with a <code dir="auto">CMakeLists.txt</code> producing an executable that links <code dir="auto">sig_host</code> and <code dir="auto">sig_builtin_capsules</code>, a <code dir="auto">sig_host_platform</code>, and an entry point; build with <code dir="auto">-DSIG_HOST_PLATFORM=&lt;platform&gt;</code></td>
+</tr>
+<tr>
+<td>A platform backend</td>
+<td>Provide the <code dir="auto">sig_thread.h</code>, <code dir="auto">sig_time.h</code> and <code dir="auto">sig_poller.h</code> functions (and optionally <code dir="auto">sig_net.h</code>) for your OS</td>
+</tr>
+</tbody>
+</table>
+</div><footer class="sl-flex astro-jnw3yptv"><div class="meta sl-flex astro-jnw3yptv"></div><div class="pagination-links print:hidden astro-7a5lyf5o" dir="ltr"><a href="/sig-docs/docs/signal-feed/" rel="prev" class="astro-7a5lyf5o"><svg aria-hidden="true" class="astro-7a5lyf5o astro-iqzfzszr" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1.5rem;"><path d="M17 11H9.41l3.3-3.29a1.004 1.004 0 1 0-1.42-1.42l-5 5a1 1 0 0 0-.21.33 1 1 0 0 0 0 .76 1 1 0 0 0 .21.33l5 5a1.002 1.002 0 0 0 1.639-.325 1 1 0 0 0-.219-1.095L9.41 13H17a1 1 0 0 0 0-2Z"/></svg><span class="astro-7a5lyf5o">Previous<br class="astro-7a5lyf5o"><span class="link-title astro-7a5lyf5o">Live signal feed</span></span></a><a href="/sig-docs/architecture/" rel="next" class="astro-7a5lyf5o"><svg aria-hidden="true" class="astro-7a5lyf5o astro-iqzfzszr" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="--sl-icon-size: 1.5rem;"><path d="M17.92 11.62a1.001 1.001 0 0 0-.21-.33l-5-5a1.003 1.003 0 1 0-1.42 1.42l3.3 3.29H7a1 1 0 0 0 0 2h7.59l-3.3 3.29a1.002 1.002 0 0 0 .325 1.639 1 1 0 0 0 1.095-.219l5-5a1 1 0 0 0 .21-.33 1 1 0 0 0 0-.76Z"/></svg><span class="astro-7a5lyf5o">Next<br class="astro-7a5lyf5o"><span class="link-title astro-7a5lyf5o">Architecture</span></span></a></div></footer></div></div></main></div></div></div></div></body></html>
